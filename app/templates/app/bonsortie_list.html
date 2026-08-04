@@ -1,0 +1,85 @@
+{% extends "app/dashboard.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Bons de sortie</h2>
+    <div>
+        <a href="{% url 'bonsortie_create' %}" class="btn btn-primary btn-sm">Nouveau bon de sortie</a>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm ms-2">Retour au dashboard</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    {% for b in bons_sortie %}
+    <div class="col-12 col-md-6 col-xl-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <strong class="small">{{ b.reference }}</strong>
+                <span class="badge bg-light text-primary">{{ b.date|date:"d/m/Y" }}</span>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title mb-1">
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 fs-6">
+                        <i class="bi bi-box-arrow-up"></i> Sortie de stock
+                    </span>
+                </h5>
+                <div class="small text-muted mb-2">
+                    {% if b.demande %}📋 {{ b.demande.reference|default:b.demande.id }}{% else %}📋 <em>Aucune demande liée</em>{% endif %}
+                </div>
+                <div class="small text-muted mb-2">
+                    {% if b.destinataire %}👤 {{ b.destinataire }}{% else %}👤 <em>Destinataire non renseigné</em>{% endif %}
+                </div>
+                <div class="small text-muted mb-2">
+                    📍 {{ b.emplacement.location|default:"Sans emplacement" }}
+                </div>
+                <div class="mb-2">
+                    <div class="small text-uppercase text-muted fw-bold mb-1">Articles</div>
+                    <div>
+                        {% for ligne in b.lignes.all %}
+                            <span class="badge bg-light text-dark border mb-1">
+                                {{ ligne.article.nom }} ×{{ ligne.quantite }}
+                            </span>
+                        {% empty %}
+                            <span class="small text-muted">—</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% if b.commentaire %}
+                <p class="small text-muted mb-2">{{ b.commentaire|truncatechars:100 }}</p>
+                {% endif %}
+            </div>
+            <div class="card-footer d-flex gap-2">
+                <a href="{% url 'bonsortie_detail' b.pk %}" class="btn btn-sm btn-outline-secondary">Voir</a>
+                <a href="{% url 'lignebonsortie_create' b.pk %}" class="btn btn-sm btn-outline-primary">+ Article</a>
+                <a href="{% url 'bonsortie_update' b.pk %}" class="btn btn-sm btn-outline-primary">Modifier</a>
+                <a href="{% url 'bonsortie_delete' b.pk %}" class="btn btn-sm btn-outline-danger">Supprimer</a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body text-center small text-muted py-5">
+                <div class="mb-2" style="font-size:2.5rem;">📤</div>
+                Aucun bon de sortie
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if is_paginated %}
+<nav class="mt-3">
+  <ul class="pagination">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Préc</a></li>
+    {% endif %}
+    <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Suiv</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

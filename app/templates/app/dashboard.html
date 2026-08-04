@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if is_chef_chantier %}Espace Chef de chantier{% elif is_resp_logistique %}Espace Responsable Logistique{% else %}Tableau de bord{% endif %} - Construction</title>
+    {% load static %}
+    <link href="{% static 'app/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-bg: #1e293b;
+            --sidebar-hover: #334155;
+            --sidebar-active: #4f46e5;
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #06b6d4;
+            --bg-main: #f1f5f9;
+            --card-radius: 14px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+            --shadow-lg: 0 12px 32px rgba(0,0,0,0.10);
+            --theme-gradient-start: #4f46e5;
+            --theme-gradient-mid: #7c3aed;
+            --theme-gradient-end: #9333ea;
+            --theme-shadow: rgba(79,70,229,0.25);
+            --theme-primary-rgb: 79,70,229;
+            --theme-avatar-1: linear-gradient(135deg, #6366f1, #8b5cf6);
+            --theme-avatar-2: linear-gradient(135deg, #10b981, #06b6d4);
+            --theme-avatar-3: linear-gradient(135deg, #f59e0b, #ef4444);
+            --theme-avatar-4: linear-gradient(135deg, #06b6d4, #6366f1);
+            --theme-avatar-5: linear-gradient(135deg, #ec4899, #f59e0b);
+            --theme-avatar-6: linear-gradient(135deg, #f97316, #f59e0b);
+        }
+
+        /* Chef de chantier - Orange/Amber theme */
+        {% if is_chef_chantier %}
+        :root {
+            --primary: #f59e0b;
+            --primary-dark: #d97706;
+            --sidebar-active: #f59e0b;
+            --theme-gradient-start: #f59e0b;
+            --theme-gradient-mid: #f97316;
+            --theme-gradient-end: #ef4444;
+            --theme-shadow: rgba(245,158,11,0.25);
+            --theme-primary-rgb: 245,158,11;
+            --theme-avatar-1: linear-gradient(135deg, #f59e0b, #f97316);
+            --theme-avatar-2: linear-gradient(135deg, #f97316, #ef4444);
+            --theme-avatar-3: linear-gradient(135deg, #ef4444, #dc2626);
+            --theme-avatar-4: linear-gradient(135deg, #f59e0b, #ef4444);
+            --theme-avatar-5: linear-gradient(135deg, #f97316, #f59e0b);
+            --theme-avatar-6: linear-gradient(135deg, #f97316, #f59e0b);
+        }
+        {% endif %}
+
+        /* Responsable Logistique - Emerald/Green theme */
+        {% if is_resp_logistique %}
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --sidebar-active: #10b981;
+            --theme-gradient-start: #10b981;
+            --theme-gradient-mid: #06b6d4;
+            --theme-gradient-end: #3b82f6;
+            --theme-shadow: rgba(16,185,129,0.25);
+            --theme-primary-rgb: 16,185,129;
+            --theme-avatar-1: linear-gradient(135deg, #10b981, #06b6d4);
+            --theme-avatar-2: linear-gradient(135deg, #06b6d4, #3b82f6);
+            --theme-avatar-3: linear-gradient(135deg, #3b82f6, #6366f1);
+            --theme-avatar-4: linear-gradient(135deg, #10b981, #3b82f6);
+            --theme-avatar-5: linear-gradient(135deg, #06b6d4, #10b981);
+            --theme-avatar-6: linear-gradient(135deg, #06b6d4, #10b981);
+        }
+        {% endif %}
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-main);
+            min-height: 100vh;
+            color: #1e293b;
+        }
+
+        a { text-decoration: none; }
+
+        /* ==================== SIDEBAR ==================== */
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            z-index: 1040;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 20px 22px;
+            color: #fff;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
+        }
+        .sidebar-brand:hover { color: #fff; }
+        .sidebar-brand .brand-logo {
+            width: 42px; height: 42px;
+            border-radius: 12px;
+            background: var(--theme-avatar-1);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+        .sidebar-brand .brand-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 0.3px;
+        }
+        .sidebar-brand .brand-sub {
+            font-size: 0.72rem;
+            color: rgba(255,255,255,0.5);
+            font-weight: 400;
+            display: block;
+            margin-top: -2px;
+        }
+
+        .sidebar-section-title {
+            padding: 18px 22px 8px;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: rgba(255,255,255,0.35);
+            font-weight: 600;
+        }
+
+        .sidebar-nav { list-style: none; padding: 0 12px; flex: 1; }
+        .sidebar-nav .nav-item { margin-bottom: 3px; }
+        .sidebar-nav .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            color: rgba(255,255,255,0.65);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .sidebar-nav .nav-link i { width: 20px; text-align: center; font-size: 1.05rem; }
+        .sidebar-nav .nav-link:hover { background: var(--sidebar-hover); color: #fff; }
+
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
+        }
+        .sidebar-footer .user-info {
+            display: flex; align-items: center; gap: 10px;
+            color: #fff; margin-bottom: 8px;
+        }
+        .sidebar-footer .user-avatar {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: var(--theme-avatar-1);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.95rem; flex-shrink: 0;
+        }
+        .sidebar-footer .user-name { font-size: 0.85rem; font-weight: 600; }
+        .sidebar-footer .user-role { font-size: 0.72rem; color: rgba(255,255,255,0.5); }
+        .sidebar-footer .btn-logout {
+            width: 100%;
+            background: rgba(239,68,68,0.15);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5;
+            border-radius: 10px;
+            padding: 8px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .sidebar-footer .btn-logout:hover {
+            background: rgba(239,68,68,0.25);
+            color: #fff;
+        }
+
+        /* ==================== MAIN CONTENT ==================== */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: margin 0.3s ease;
+        }
+
+        .topbar {
+            background: #fff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+        .topbar .page-title h1 {
+            font-size: 1.25rem; font-weight: 700; margin: 0; color: #0f172a;
+        }
+        .topbar .page-title p {
+            font-size: 0.8rem; color: #64748b; margin: 2px 0 0;
+        }
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .btn-create {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 18px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        .btn-create:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb),0.3);
+            color: #fff;
+        }
+        .notification-btn {
+            width: 42px; height: 42px;
+            border-radius: 12px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+            color: #475569;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        .notification-btn:hover { background: #e2e8f0; color: var(--primary); }
+        .notification-btn .dot {
+            position: absolute;
+            top: 8px; right: 9px;
+            width: 8px; height: 8px;
+            background: var(--danger);
+            border-radius: 50%;
+            border: 2px solid #fff;
+        }
+        .topbar-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 12px 6px 6px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+        .topbar-user .avatar-sm {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: var(--theme-avatar-1);
+            color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+        .topbar-user .user-meta { line-height: 1.1; }
+        .topbar-user .user-meta .name { font-size: 0.82rem; font-weight: 600; color: #0f172a; }
+        .topbar-user .user-meta .role { font-size: 0.7rem; color: #64748b; }
+
+        .sidebar-toggle {
+            display: none;
+            width: 42px; height: 42px;
+            border-radius: 12px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            font-size: 1.2rem;
+            color: #475569;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .content { padding: 26px 28px; flex: 1; }
+
+        /* ==================== BANNIERE ==================== */
+        .hero-banner {
+            background: linear-gradient(135deg, var(--theme-gradient-start) 0%, var(--theme-gradient-mid) 50%, var(--theme-gradient-end) 100%);
+            border-radius: var(--card-radius);
+            padding: 22px 28px;
+            color: #fff;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            box-shadow: 0 8px 24px var(--theme-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-banner::after {
+            content: '';
+            position: absolute;
+            right: -40px; top: -40px;
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+        }
+        .hero-banner::before {
+            content: '';
+            position: absolute;
+            right: 60px; bottom: -60px;
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+        }
+        .hero-banner h1 { font-size: 1.35rem; font-weight: 700; margin: 0 0 4px; }
+        .hero-banner p { font-size: 0.85rem; margin: 0; opacity: 0.85; }
+        .hero-banner .hero-actions { display: flex; gap: 10px; position: relative; z-index: 1; }
+        .hero-banner .btn-light-custom {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            padding: 8px 16px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            backdrop-filter: blur(4px);
+            transition: all 0.2s ease;
+        }
+        .hero-banner .btn-light-custom:hover {
+            background: rgba(255,255,255,0.25);
+            color: #fff;
+        }
+
+        /* ==================== CARTES STATISTIQUES ==================== */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: var(--card-radius);
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #eef2f7;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s ease;
+            color: inherit;
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            color: inherit;
+        }
+        .stat-card:hover {
+            border-color: rgba(var(--theme-primary-rgb),0.2);
+        }
+        .stat-card .stat-icon {
+            width: 52px; height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+        .stat-icon.indigo { background: rgba(79,70,229,0.1); color: #4f46e5; }
+        .stat-icon.green { background: rgba(16,185,129,0.1); color: #10b981; }
+        .stat-icon.amber { background: rgba(245,158,11,0.1); color: #f59e0b; }
+        .stat-icon.cyan { background: rgba(6,182,212,0.1); color: #06b6d4; }
+        .stat-icon.red { background: rgba(239,68,68,0.1); color: #ef4444; }
+        .stat-icon.orange { background: rgba(249,115,22,0.1); color: #f97316; }
+        .stat-info { flex: 1; }
+        .stat-label {
+            font-size: 0.75rem; font-weight: 500;
+            color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .stat-value {
+            font-size: 1.55rem; font-weight: 700; color: #0f172a; line-height: 1.2;
+        }
+        .stat-detail { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+
+        /* ==================== PANELS ==================== */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 1200px) {
+            .content-grid { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background: #fff;
+            border-radius: var(--card-radius);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #eef2f7;
+            overflow: hidden;
+        }
+        .panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #eef2f7;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .panel-header h5 { margin: 0; font-size: 0.95rem; font-weight: 600; color: #0f172a; }
+        .panel-body { padding: 0; }
+
+        /* Tableau moderne */
+        .table-modern {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table-modern th {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: #94a3b8;
+            padding: 10px 20px;
+            border-bottom: 1px solid #eef2f7;
+            background: #f8fafc;
+            white-space: nowrap;
+            text-align: left;
+        }
+        .table-modern td {
+            padding: 12px 20px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #eef2f7;
+            vertical-align: middle;
+        }
+        .table-modern tbody tr:last-child td { border-bottom: none; }
+        .table-modern tbody tr { transition: background 0.15s ease; }
+        .table-modern tbody tr:hover { background: #f8fafc; }
+
+        .badge-statut {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            display: inline-block;
+            white-space: nowrap;
+        }
+        .badge-statut.NOUVEAU { background: #e2e8f0; color: #475569; }
+        .badge-statut.EN_COURS { background: rgba(var(--theme-primary-rgb),0.12); color: var(--primary); }
+        .badge-statut.VALIDE { background: rgba(16,185,129,0.12); color: #10b981; }
+        .badge-statut.REFUSE { background: rgba(239,68,68,0.12); color: #ef4444; }
+
+        .badge-article {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 3px 8px;
+            font-size: 0.75rem;
+            display: inline-block;
+            margin: 1px;
+            white-space: nowrap;
+        }
+
+        /* Liste équipe */
+        .team-list { list-style: none; padding: 8px 20px; }
+        .team-list li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .team-list li:last-child { border-bottom: none; }
+        .team-avatar {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.8rem; color: #fff; flex-shrink: 0;
+        }
+        .team-avatar.c1 { background: var(--theme-avatar-1); }
+        .team-avatar.c2 { background: var(--theme-avatar-2); }
+        .team-avatar.c3 { background: var(--theme-avatar-3); }
+        .team-avatar.c4 { background: var(--theme-avatar-4); }
+        .team-avatar.c5 { background: var(--theme-avatar-5); }
+        .team-avatar.c6 { background: var(--theme-avatar-6); }
+        .team-info { flex: 1; line-height: 1.2; }
+        .team-info .team-name { font-size: 0.85rem; font-weight: 600; color: #0f172a; }
+        .team-info .team-sub { font-size: 0.74rem; color: #64748b; }
+        .team-username {
+            font-size: 0.72rem;
+            background: #f1f5f9;
+            padding: 3px 8px;
+            border-radius: 6px;
+            color: #64748b;
+        }
+
+        /* Alertes stock */
+        .alert-list { list-style: none; padding: 8px 20px; }
+        .alert-list li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .alert-list li:last-child { border-bottom: none; }
+        .alert-icon {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+        .alert-icon.red { background: rgba(239,68,68,0.12); color: #ef4444; }
+        .alert-icon.amber { background: rgba(245,158,11,0.12); color: #f59e0b; }
+        .alert-info { flex: 1; line-height: 1.2; }
+        .alert-info .alert-name { font-size: 0.85rem; font-weight: 600; color: #0f172a; }
+        .alert-info .alert-sub { font-size: 0.74rem; color: #64748b; }
+        .alert-qty { font-size: 0.9rem; font-weight: 700; }
+        .alert-qty.low { color: #ef4444; }
+        .alert-qty.warning { color: #f59e0b; }
+
+        .empty-state {
+            padding: 32px 20px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+        .empty-state i { font-size: 2rem; display: block; margin-bottom: 8px; opacity: 0.5; }
+
+        /* Pagination */
+        .pagination-modern { padding: 12px 20px; }
+        .pagination-modern .page-link {
+            border-radius: 8px;
+            margin: 0 2px;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            font-size: 0.82rem;
+            padding: 6px 12px;
+        }
+        .pagination-modern .page-item.active .page-link {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 992px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.show { transform: translateX(0); box-shadow: var(--shadow-lg); }
+            .main-content { margin-left: 0; }
+            .sidebar-toggle { display: flex; }
+            .topbar { padding: 12px 16px; }
+            .content { padding: 16px; }
+            .stat-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+            .hero-banner { flex-direction: column; text-align: center; }
+            .topbar-user .user-meta { display: none; }
+        }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1035;
+        }
+        .sidebar-overlay.show { display: block; }
+        @media (min-width: 993px) {
+            .sidebar-overlay { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Overlay mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside class="sidebar" id="sidebar">
+        <a class="sidebar-brand" href="{% url 'dashboard' %}">
+            <div class="brand-logo"><i class="bi bi-building"></i></div>
+            <div>
+                <div class="brand-name">Construction</div>
+                <span class="brand-sub">Gestion des chantiers</span>
+            </div>
+        </a>
+
+        <div class="sidebar-section-title">Menu principal</div>
+        <ul class="sidebar-nav">
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+                    <i class="bi bi-grid-1x2-fill"></i> Tableau de bord
+                </a>
+            </li>
+            {% if is_resp_logistique %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'demande_list' %}active{% endif %}" href="{% url 'demande_list' %}">
+                    <i class="bi bi-inbox-fill"></i> Demandes reçues
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'demande_create' %}active{% endif %}" href="{% url 'demande_create' %}">
+                    <i class="bi bi-plus-circle-fill"></i> Créer une demande
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'stock_list' %}active{% endif %}" href="{% url 'stock_list' %}">
+                    <i class="bi bi-box-seam-fill"></i> Vérifier le stock
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'article_list' %}active{% endif %}" href="{% url 'article_list' %}">
+                    <i class="bi bi-box-fill"></i> Articles
+                </a>
+            </li>
+            <div class="sidebar-section-title">Logistique</div>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'bonentree_list' %}active{% endif %}" href="{% url 'bonentree_list' %}">
+                    <i class="bi bi-box-arrow-in-down"></i> Bons d'entrée
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'bonsortie_list' %}active{% endif %}" href="{% url 'bonsortie_list' %}">
+                    <i class="bi bi-box-arrow-up"></i> Bons de sortie
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'devis_list' %}active{% endif %}" href="{% url 'devis_list' %}">
+                    <i class="bi bi-file-earmark-text"></i> Devis
+                </a>
+            </li>
+            {% endif %}
+            {% if is_chef_chantier %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'demande_list' %}active{% endif %}" href="{% url 'demande_list' %}">
+                    <i class="bi bi-inbox-fill"></i> Mes demandes
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'demande_create' %}active{% endif %}" href="{% url 'demande_create' %}">
+                    <i class="bi bi-plus-circle-fill"></i> Créer une demande
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'stock_list' %}active{% endif %}" href="{% url 'stock_list' %}">
+                    <i class="bi bi-box-seam-fill"></i> Vérifier le stock
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'personnel_list' %}active{% endif %}" href="{% url 'personnel_list' %}">
+                    <i class="bi bi-people-fill"></i> Mon équipe
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'article_list' %}active{% endif %}" href="{% url 'article_list' %}">
+                    <i class="bi bi-box-fill"></i> Articles
+                </a>
+            </li>
+            <div class="sidebar-section-title">Administration</div>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'fonction_list' %}active{% endif %}" href="{% url 'fonction_list' %}">
+                    <i class="bi bi-person-badge-fill"></i> Fonctions
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'typedemande_list' %}active{% endif %}" href="{% url 'typedemande_list' %}">
+                    <i class="bi bi-tags-fill"></i> Types demande
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'emplacement_list' %}active{% endif %}" href="{% url 'emplacement_list' %}">
+                    <i class="bi bi-geo-alt-fill"></i> Emplacements
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">{{ user.get_full_name|default:user.username|slice:":1"|upper }}</div>
+                <div>
+                    <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+                    <div class="user-role">
+                        {% if is_chef_chantier %}Chef de chantier{% elif is_resp_logistique %}Responsable logistique{% else %}Administrateur{% endif %}
+                        {% if chantier %} · {{ chantier.location }}{% endif %}
+                    </div>
+                </div>
+            </div>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-logout"><i class="bi bi-box-arrow-right"></i> Se déconnecter</button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- ==================== MAIN ==================== -->
+    <div class="main-content">
+        <!-- Topbar -->
+        <header class="topbar">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+                <div class="page-title">
+                    <h1>{% if is_chef_chantier %}Espace Chef de chantier{% elif is_resp_logistique %}Espace Responsable Logistique{% else %}Tableau de bord{% endif %}</h1>
+                    <p>
+                        {% if is_chef_chantier and chantier %}
+                            Gestion du chantier : <strong>{{ chantier.location }}</strong>
+                        {% elif is_resp_logistique %}
+                            Gestion des demandes, stocks, bons et devis
+                        {% else %}
+                            Vue d'ensemble — KPI et activités récentes
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <div class="topbar-actions">
+                {% if is_resp_logistique %}
+                <a href="{% url 'demande_create' %}" class="btn-create"><i class="bi bi-plus-lg"></i> Nouvelle demande</a>
+                <a href="{% url 'bonentree_create' %}" class="btn-create"><i class="bi bi-box-arrow-in-down"></i> Bon d'entrée</a>
+                {% else %}
+                <a href="{% url 'demande_create' %}" class="btn-create"><i class="bi bi-plus-lg"></i> Nouvelle demande</a>
+                {% endif %}
+                <a href="#" class="notification-btn" title="Notifications">
+                    <i class="bi bi-bell"></i>
+                    {% if alertes_stock %}<span class="dot"></span>{% endif %}
+                </a>
+                <div class="topbar-user">
+                    <div class="avatar-sm">{{ user.get_full_name|default:user.username|slice:":1"|upper }}</div>
+                    <div class="user-meta d-none d-md-block">
+                        <div class="name">{{ user.get_full_name|default:user.username }}</div>
+                        <div class="role">{% if is_chef_chantier %}Chef de chantier{% elif is_resp_logistique %}Responsable logistique{% else %}Administrateur{% endif %}</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenu -->
+        <main class="content">
+            {% block content %}
+            <!-- Bannière -->
+            <div class="hero-banner">
+                <div>
+                    <h1><i class="bi {% if is_chef_chantier %}bi-hard-hat{% elif is_resp_logistique %}bi-truck{% else %}bi-graph-up-arrow{% endif %}"></i>
+                        {% if is_chef_chantier %}Bienvenue sur votre chantier{% elif is_resp_logistique %}Espace Logistique{% else %}Vue d'ensemble{% endif %}
+                    </h1>
+                    <p>
+                        {% if is_chef_chantier %}
+                            {% if chantier %}
+                                Vous gérez : <strong>{{ chantier.location }}</strong>
+                            {% else %}
+                                Aucun chantier affecté — contactez l'administrateur.
+                            {% endif %}
+                        {% elif is_resp_logistique %}
+                            Consultez les demandes, vérifiez le stock, générez des bons et des devis
+                        {% else %}
+                            Suivez les indicateurs clés de l'activité
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="hero-actions">
+                    {% if is_chef_chantier %}
+                        <a href="{% url 'demande_list' %}" class="btn-light-custom"><i class="bi bi-inbox"></i> Mes demandes</a>
+                        <a href="{% url 'stock_list' %}" class="btn-light-custom"><i class="bi bi-box-seam"></i> Stocks</a>
+                    {% elif is_resp_logistique %}
+                        <a href="{% url 'demande_list' %}" class="btn-light-custom"><i class="bi bi-inbox"></i> Demandes</a>
+                        <a href="{% url 'stock_list' %}" class="btn-light-custom"><i class="bi bi-box-seam"></i> Stocks</a>
+                        <a href="{% url 'bonentree_create' %}" class="btn-light-custom"><i class="bi bi-box-arrow-in-down"></i> Bon entrée</a>
+                        <a href="{% url 'bonsortie_create' %}" class="btn-light-custom"><i class="bi bi-box-arrow-up"></i> Bon sortie</a>
+                        <a href="{% url 'devis_create' %}" class="btn-light-custom"><i class="bi bi-file-earmark-text"></i> Devis</a>
+                    {% else %}
+                        <a href="{% url 'demande_list' %}" class="btn-light-custom"><i class="bi bi-inbox"></i> Demandes</a>
+                        <a href="{% url 'stock_list' %}" class="btn-light-custom"><i class="bi bi-box-seam"></i> Stocks</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Cartes statistiques -->
+            {% if is_resp_logistique %}
+            <div class="stat-grid">
+                <div class="stat-card" data-href="{% url 'demande_list' %}">
+                    <div class="stat-icon indigo"><i class="bi bi-inbox-fill"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">Demandes reçues</div>
+                        <div class="stat-value">{{ demandes_count }}</div>
+                        <div class="stat-detail">
+                            {% if statuts_demandes %}
+                                {{ statuts_demandes.NOUVEAU }} nouvelle(s)
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card" data-href="{% url 'stock_list' %}">
+                    <div class="stat-icon green"><i class="bi bi-box-seam-fill"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">Stocks</div>
+                        <div class="stat-value">{{ stocks_count }}</div>
+                        <div class="stat-detail">
+                            {% if alertes_stock %}
+                                <span style="color:#ef4444;font-weight:600;">⚠ {{ alertes_stock|length }} alerte(s)</span>
+                            {% else %}
+                                <span style="color:#10b981;">Aucune alerte</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card" data-href="{% url 'bonentree_list' %}">
+                    <div class="stat-icon cyan"><i class="bi bi-box-arrow-in-down"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">Bons d'entrée</div>
+                        <div class="stat-value">{{ bons_entree_count }}</div>
+                        <div class="stat-detail">Entrées de stock</div>
+                    </div>
+                </div>
+                <div class="stat-card" data-href="{% url 'bonsortie_list' %}">
+                    <div class="stat-icon amber"><i class="bi bi-box-arrow-up"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">Bons de sortie</div>
+                        <div class="stat-value">{{ bons_sortie_count }}</div>
+                        <div class="stat-detail">Sorties de stock</div>
+                    </div>
+                </div>
+                <div class="stat-card" data-href="{% url 'devis_list' %}">
+                    <div class="stat-icon red"><i class="bi bi-file-earmark-text"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">Devis</div>
+                        <div class="stat-value">{{ devis_count }}</div>
+                        <div class="stat-detail">Devis générés</div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="stat-grid">
+                <div class="stat-card" data-href="{% url 'demande_list' %}">
+                    <div class="stat-icon indigo"><i class="bi bi-inbox-fill"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">Demandes</div>
+                        <div class="stat-value">{{ demandes_count }}</div>
+                        <div class="stat-detail">
+                            {% if is_chef_chantier %}
+                                {% if statuts_demandes %}
+                                    {{ statuts_demandes.NOUVEAU }} nouvelle(s)
+                                {% endif %}
+                            {% else %}
+                                Toutes les demandes
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card" data-href="{% url 'stock_list' %}">
+                    <div class="stat-icon green"><i class="bi bi-box-seam-fill"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">Stocks</div>
+                        <div class="stat-value">{{ stocks_count }}</div>
+                        <div class="stat-detail">
+                            {% if alertes_stock %}
+                                <span style="color:#ef4444;font-weight:600;">⚠ {{ alertes_stock|length }} alerte(s)</span>
+                            {% else %}
+                                <span style="color:#10b981;">Aucune alerte</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card" data-href="{% url 'personnel_list' %}">
+                    <div class="stat-icon amber"><i class="bi bi-people-fill"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">{% if is_chef_chantier %}Mon équipe{% else %}Personnels{% endif %}</div>
+                        <div class="stat-value">{{ personnels_count }}</div>
+                        <div class="stat-detail">
+                            {% if is_chef_chantier %}Membres du chantier{% else %}Tous les personnels{% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card" data-href="{% url 'article_list' %}">
+                    <div class="stat-icon cyan"><i class="bi bi-box-fill"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">Articles</div>
+                        <div class="stat-value">{{ articles_count }}</div>
+                        <div class="stat-detail">Références disponibles</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ===== SECTIONS RESPONSABLE LOGISTIQUE ===== -->
+            {% if is_resp_logistique %}
+            <!-- Demandes reçues avec vérification du stock -->
+            <div class="panel" style="margin-bottom:20px;">
+                <div class="panel-header">
+                    <h5><i class="bi bi-inbox me-2" style="color:#4f46e5;"></i>Demandes reçues — Vérification du stock</h5>
+                    <a href="{% url 'demande_list' %}" style="font-size:0.8rem;color:#4f46e5;font-weight:600;">Tout voir <i class="bi bi-arrow-right"></i></a>
+                </div>
+                <div class="panel-body">
+                    {% if demandes_avec_stock %}
+                    <div style="overflow-x:auto;">
+                        <table class="table-modern">
+                            <thead>
+                                <tr>
+                                    <th>Réf.</th>
+                                    <th>Demandeur</th>
+                                    <th>Type</th>
+                                    <th>Date</th>
+                                    <th>Articles demandés</th>
+                                    <th>Disponibilité</th>
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in demandes_avec_stock %}
+                                <tr>
+                                    <td><strong>{{ item.demande.reference|default:item.demande.id }}</strong></td>
+                                    <td>
+                                        {% if item.demande.demandeur %}
+                                            {{ item.demande.demandeur.prenom }} {{ item.demande.demandeur.nom }}
+                                        {% else %}
+                                            <span style="color:#94a3b8;">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.demande.type_demande.nom }}</td>
+                                    <td>{{ item.demande.date|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <div style="font-size:0.85rem;">
+                                            {% for ligne in item.lignes_info %}
+                                                <div class="mb-1">
+                                                    {% if ligne.suffisant %}
+                                                    <span class="badge-article">
+                                                    {% else %}
+                                                    <span class="badge-article" style="border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,0.08);">
+                                                    {% endif %}
+                                                        <strong>{{ ligne.article.nom }}</strong> ×{{ ligne.quantite }}
+                                                        {% if not ligne.suffisant %}
+                                                            <i class="bi bi-exclamation-triangle" title="Stock insuffisant"></i>
+                                                        {% endif %}
+                                                    </span>
+                                                    <br>
+                                                    <small style="color:#64748b;">
+                                                        Stock: {{ ligne.disponible }} unités
+                                                        {% if ligne.suffisant %}
+                                                            <i class="bi bi-check-circle" style="color:#10b981;"></i>
+                                                        {% else %}
+                                                            <i class="bi bi-x-circle" style="color:#ef4444;"></i> Manque: {{ ligne.manque }}
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+                                            {% empty %}
+                                                <span style="color:#94a3b8;">—</span>
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if item.stock_suffisant %}
+                                            <span class="badge-statut VALIDE"><i class="bi bi-check-circle"></i> Stock OK</span>
+                                        {% else %}
+                                            <span class="badge-statut REFUSE"><i class="bi bi-x-circle"></i> Stock insuffisant</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge-statut {{ item.demande.statut }}">
+                                            {% if item.demande.statut == "NOUVEAU" %}Nouveau
+                                            {% elif item.demande.statut == "EN_COURS" %}En cours
+                                            {% elif item.demande.statut == "VALIDE" %}Validé
+                                            {% elif item.demande.statut == "REFUSE" %}Refusé
+                                            {% else %}{{ item.demande.statut }}{% endif %}
+                                        </span>
+                                        {% if item.stock_suffisant and item.demande.statut != "REFUSE" %}
+                                        <br>
+                                        <a href="{% url 'bonsortie_create' %}?demande={{ item.demande.id }}" class="btn-create" style="font-size:0.75rem;padding:6px 12px;margin-top:6px;">
+                                            <i class="bi bi-box-arrow-up"></i> Livrer
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        Aucune demande reçue
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Bons d'entrée, bons de sortie et devis récents -->
+            <div class="content-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:20px;">
+                <!-- Bons d'entrée récents -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h5><i class="bi bi-box-arrow-in-down me-2" style="color:#06b6d4;"></i>Bons d'entrée</h5>
+                        <a href="{% url 'bonentree_list' %}" style="font-size:0.8rem;color:#4f46e5;font-weight:600;">Tout voir <i class="bi bi-arrow-right"></i></a>
+                    </div>
+                    <div class="panel-body">
+                        {% if bons_entree_list %}
+                        <ul class="team-list">
+                            {% for be in bons_entree_list %}
+                            <li>
+                                <div class="team-avatar c4" style="width:32px;height:32px;font-size:0.7rem;"><i class="bi bi-box-arrow-in-down"></i></div>
+                                <div class="team-info">
+                                    <div class="team-name">{{ be.reference|default:be.id }}</div>
+                                    <div class="team-sub">
+                                        {{ be.date|date:"d/m/Y" }}
+                                        {% if be.fournisseur %} · {{ be.fournisseur }}{% endif %}
+                                    </div>
+                                </div>
+                                <span class="badge-article">{{ be.lignes.count }} article(s)</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-box-arrow-in-down"></i>
+                            Aucun bon d'entrée
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Bons de sortie récents -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h5><i class="bi bi-box-arrow-up me-2" style="color:#f59e0b;"></i>Bons de sortie</h5>
+                        <a href="{% url 'bonsortie_list' %}" style="font-size:0.8rem;color:#4f46e5;font-weight:600;">Tout voir <i class="bi bi-arrow-right"></i></a>
+                    </div>
+                    <div class="panel-body">
+                        {% if bons_sortie_list %}
+                        <ul class="team-list">
+                            {% for bs in bons_sortie_list %}
+                            <li>
+                                <div class="team-avatar c3" style="width:32px;height:32px;font-size:0.7rem;"><i class="bi bi-box-arrow-up"></i></div>
+                                <div class="team-info">
+                                    <div class="team-name">{{ bs.reference|default:bs.id }}</div>
+                                    <div class="team-sub">
+                                        {{ bs.date|date:"d/m/Y" }}
+                                        {% if bs.destinataire %} · {{ bs.destinataire }}{% endif %}
+                                    </div>
+                                </div>
+                                <span class="badge-article">{{ bs.lignes.count }} article(s)</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-box-arrow-up"></i>
+                            Aucun bon de sortie
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Devis récents -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h5><i class="bi bi-file-earmark-text me-2" style="color:#ef4444;"></i>Devis</h5>
+                        <a href="{% url 'devis_list' %}" style="font-size:0.8rem;color:#4f46e5;font-weight:600;">Tout voir <i class="bi bi-arrow-right"></i></a>
+                    </div>
+                    <div class="panel-body">
+                        {% if devis_list %}
+                        <ul class="team-list">
+                            {% for dev in devis_list %}
+                            <li>
+                                <div class="team-avatar c5" style="width:32px;height:32px;font-size:0.7rem;"><i class="bi bi-file-earmark-text"></i></div>
+                                <div class="team-info">
+                                    <div class="team-name">{{ dev.reference|default:dev.id }}</div>
+                                    <div class="team-sub">
+                                        {{ dev.date|date:"d/m/Y" }} · {{ dev.client }}
+                                    </div>
+                                </div>
+                                <span class="badge-article">{{ dev.lignes.count }} article(s)</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-file-earmark-text"></i>
+                            Aucun devis
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Statuts des demandes (chef de chantier) -->
+            {% if is_chef_chantier and statuts_demandes %}
+            <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);gap:12px;">
+                <div class="stat-card" data-href="{% url 'demande_list' %}">
+                    <div class="stat-icon" style="background:rgba(100,116,139,0.1);color:#64748b;"><i class="bi bi-file-earmark-text"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">Nouvelles</div>
+                        <div class="stat-value">{{ statuts_demandes.NOUVEAU }}</div>
+                    </div>
+                </div>
+                <div class="stat-card" data-href="{% url 'demande_list' %}">
+                    <div class="stat-icon" style="background:rgba(245,158,11,0.1);color:#f59e0b;"><i class="bi bi-hourglass-split"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">En cours</div>
+                        <div class="stat-value">{{ statuts_demandes.EN_COURS }}</div>
+                    </div>
+                </div>
+                <div class="stat-card" data-href="{% url 'demande_list' %}">
+                    <div class="stat-icon" style="background:rgba(16,185,129,0.1);color:#10b981;"><i class="bi bi-check-circle"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">Validées</div>
+                        <div class="stat-value">{{ statuts_demandes.VALIDE }}</div>
+                    </div>
+                </div>
+                <div class="stat-card" data-href="{% url 'demande_list' %}">
+                    <div class="stat-icon" style="background:rgba(239,68,68,0.1);color:#ef4444;"><i class="bi bi-x-circle"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-label">Refusées</div>
+                        <div class="stat-value">{{ statuts_demandes.REFUSE }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="content-grid">
+                <!-- Dernières demandes -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h5><i class="bi bi-inbox me-2" style="color:#4f46e5;"></i>{% if is_chef_chantier %}Dernières demandes du chantier{% else %}Dernières demandes{% endif %}</h5>
+                        <a href="{% url 'demande_list' %}" style="font-size:0.8rem;color:#4f46e5;font-weight:600;">Tout voir <i class="bi bi-arrow-right"></i></a>
+                    </div>
+                    <div class="panel-body">
+                        {% if demandes_list %}
+                        <div style="overflow-x:auto;">
+                            <table class="table-modern">
+                                <thead>
+                                    <tr>
+                                        <th>Réf.</th>
+                                        <th>Type</th>
+                                        <th>Date</th>
+                                        <th>Articles</th>
+                                        <th>Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for d in demandes_list %}
+                                    <tr>
+                                        <td><strong>{{ d.reference|default:d.id }}</strong></td>
+                                        <td>{{ d.type_demande.nom }}</td>
+                                        <td>{{ d.date|date:"d/m/Y" }}</td>
+                                        <td>
+                                            {% for ligne in d.lignes.all %}
+                                                <span class="badge-article">{{ ligne.article.nom }} ×{{ ligne.quantite }}</span>
+                                            {% empty %}
+                                                <span style="color:#94a3b8;">—</span>
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            <span class="badge-statut {{ d.statut }}">
+                                                {% if d.statut == "NOUVEAU" %}Nouveau
+                                                {% elif d.statut == "EN_COURS" %}En cours
+                                                {% elif d.statut == "VALIDE" %}Validé
+                                                {% elif d.statut == "REFUSE" %}Refusé
+                                                {% else %}{{ d.statut }}{% endif %}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            Aucune demande pour ce chantier
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Mon équipe / Activité récente -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h5><i class="bi bi-people me-2" style="color:#f59e0b;"></i>{% if is_chef_chantier %}Mon équipe{% else %}Activité récente{% endif %}</h5>
+                        <a href="{% url 'personnel_list' %}" style="font-size:0.8rem;color:#4f46e5;font-weight:600;">Tout voir <i class="bi bi-arrow-right"></i></a>
+                    </div>
+                    <div class="panel-body">
+                        {% if is_chef_chantier %}
+                            {% if equipe_chantier %}
+                            <ul class="team-list">
+                                {% for p in equipe_chantier %}
+                                <li>
+                                    <div class="team-avatar c{{ forloop.counter|add:"-1"|stringformat:"s"|default:"1" }}">{{ p.prenom|slice:":1" }}{{ p.nom|slice:":1" }}</div>
+                                    <div class="team-info">
+                                        <div class="team-name">{{ p.prenom }} {{ p.nom }}</div>
+                                        <div class="team-sub">
+                                            {% if p.fonction %}{{ p.fonction.nom }}{% else %}—{% endif %}
+                                            {% if p.telephone %} · {{ p.telephone }}{% endif %}
+                                        </div>
+                                    </div>
+                                    <span class="team-username">@{{ p.user.username }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <div class="empty-state">
+                                <i class="bi bi-people"></i>
+                                Aucun membre d'équipe rattaché.
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            {% if demandes_list %}
+                            <ul class="team-list">
+                                {% for d in demandes_list %}
+                                <li>
+                                    <div class="team-avatar c{{ forloop.counter }}" style="width:32px;height:32px;font-size:0.7rem;">{{ d.type_demande.nom|slice:":1" }}</div>
+                                    <div class="team-info">
+                                        <div class="team-name">{{ d.date|date:"d/m/Y" }} — {{ d.type_demande.nom }}</div>
+                                        <div class="team-sub">{{ d.reference|default:d.id }}</div>
+                                    </div>
+                                    <span class="badge-statut {{ d.statut }}">
+                                        {% if d.statut == "NOUVEAU" %}Nouveau
+                                        {% elif d.statut == "EN_COURS" %}En cours
+                                        {% elif d.statut == "VALIDE" %}Validé
+                                        {% elif d.statut == "REFUSE" %}Refusé
+                                        {% else %}{{ d.statut }}{% endif %}
+                                    </span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <div class="empty-state">
+                                <i class="bi bi-inbox"></i>
+                                Aucune demande récente
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alertes stock faible -->
+            {% if alertes_stock %}
+            <div class="panel" style="border-left:4px solid #ef4444;">
+                <div class="panel-header">
+                    <h5><i class="bi bi-exclamation-triangle me-2" style="color:#ef4444;"></i>Alertes stock faible</h5>
+                    <a href="{% url 'stock_list' %}" style="font-size:0.8rem;color:#4f46e5;font-weight:600;">Gérer <i class="bi bi-arrow-right"></i></a>
+                </div>
+                <div class="panel-body">
+                    <ul class="alert-list">
+                        {% for s in alertes_stock %}
+                        <li>
+                            <div class="alert-icon {% if s.quantite_disponible <= s.article.seuil_minimum %}red{% else %}amber{% endif %}">
+                                <i class="bi bi-box-seam"></i>
+                            </div>
+                            <div class="alert-info">
+                                <div class="alert-name">{{ s.article.nom }}</div>
+                                <div class="alert-sub">
+                                    {{ s.article.unite_mesure }} · Seuil min : {{ s.article.seuil_minimum }}
+                                    {% if s.emplacement %} · {{ s.emplacement.location }}{% endif %}
+                                </div>
+                            </div>
+                            <div class="alert-qty {% if s.quantite_disponible <= s.article.seuil_minimum %}low{% else %}warning{% endif %}">
+                                {{ s.quantite_disponible }}
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Graphique (générique) -->
+            {% if not is_chef_chantier %}
+            <div class="panel">
+                <div class="panel-header">
+                    <h5><i class="bi bi-bar-chart me-2" style="color:#06b6d4;"></i>Activité récente</h5>
+                </div>
+                <div class="panel-body" style="padding:20px;">
+                    <canvas id="kpiChart" width="600" height="180" data-personnels="{{ personnels_count }}" data-demandes="{{ demandes_count }}" data-articles="{{ articles_count }}" data-stocks="{{ stocks_count }}"></canvas>
+                </div>
+            </div>
+            {% endif %}
+            {% endblock %}
+        </main>
+    </div>
+
+    <script src="{% static 'app/js/bootstrap.bundle.min.js' %}"></script>
+    <script>
+        // ===== Sidebar mobile =====
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('sidebarToggle');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            if (toggle) {
+                toggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('show');
+                    overlay.classList.toggle('show');
+                });
+            }
+            if (overlay) {
+                overlay.addEventListener('click', function() {
+                    sidebar.classList.remove('show');
+                    overlay.classList.remove('show');
+                });
+            }
+
+            // ===== Cartes cliquables =====
+            document.querySelectorAll('.stat-card[data-href]').forEach(function(card) {
+                card.style.cursor = 'pointer';
+                card.addEventListener('click', function(e) {
+                    if (e.target.closest('a, button')) return;
+                    window.location.href = card.getAttribute('data-href');
+                });
+                card.setAttribute('tabindex', '0');
+                card.setAttribute('role', 'link');
+                card.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        window.location.href = card.getAttribute('data-href');
+                    }
+                });
+            });
+
+            // ===== Graphique canvas =====
+            const c = document.getElementById('kpiChart');
+            if (c) {
+                const ctx = c.getContext('2d');
+                const p = Number(c.dataset.personnels) || 0;
+                const d = Number(c.dataset.demandes) || 0;
+                const a = Number(c.dataset.articles) || 0;
+                const s = Number(c.dataset.stocks) || 0;
+                const values = [p, d, a, s];
+                const labels = ['Personnels', 'Demandes', 'Articles', 'Stocks'];
+                const colors = ['#4f46e5', '#10b981', '#f59e0b', '#06b6d4'];
+                const w = c.width, h = c.height;
+                ctx.clearRect(0, 0, w, h);
+                const max = Math.max(...values, 1);
+                const padding = 35;
+                const chartW = w - padding * 2;
+                const chartH = h - padding * 2;
+                const barWidth = chartW / values.length * 0.55;
+
+                values.forEach(function(v, i) {
+                    const barH = (v / max) * chartH;
+                    const x = padding + i * (chartW / values.length) + ((chartW / values.length) - barWidth) / 2;
+                    const y = h - padding - barH;
+                    ctx.fillStyle = colors[i];
+                    ctx.fillRect(x, y, barWidth, barH);
+                    ctx.fillStyle = colors[i];
+                    ctx.beginPath();
+                    ctx.arc(x + barWidth / 2, y, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#333';
+                    ctx.font = '12px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(labels[i], x + barWidth / 2, h - padding + 18);
+                    ctx.fillText(values[i], x + barWidth / 2, y - 10);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

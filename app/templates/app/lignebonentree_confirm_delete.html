@@ -1,0 +1,15 @@
+{% extends "app/dashboard.html" %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h5 class="card-title">Supprimer la ligne</h5>
+    <p>Voulez-vous vraiment supprimer <strong>{{ object }}</strong> ?</p>
+    <form method="post">{% csrf_token %}
+      <button class="btn btn-danger">Supprimer</button>
+      <a href="{% url 'bonentree_list' %}" class="btn btn-secondary">Annuler</a>
+      <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary ms-2">Retour au dashboard</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

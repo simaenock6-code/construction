@@ -1,0 +1,56 @@
+{% extends "app/dashboard.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Bon de sortie {{ bon_sortie.reference }}</h2>
+    <div>
+        <a href="{% url 'lignebonsortie_create' bon_sortie.pk %}" class="btn btn-primary btn-sm">+ Ajouter un article</a>
+        <a href="{% url 'bonsortie_update' bon_sortie.pk %}" class="btn btn-outline-primary btn-sm">Modifier</a>
+        <a href="{% url 'bonsortie_list' %}" class="btn btn-outline-secondary btn-sm ms-2">Retour</a>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4"><strong>Référence :</strong> {{ bon_sortie.reference }}</div>
+            <div class="col-md-4"><strong>Date :</strong> {{ bon_sortie.date|date:"d/m/Y" }}</div>
+            <div class="col-md-4"><strong>Demande :</strong> {{ bon_sortie.demande.reference|default:"—" }}</div>
+            <div class="col-md-4 mt-2"><strong>Destinataire :</strong> {{ bon_sortie.destinataire|default:"—" }}</div>
+            <div class="col-md-4 mt-2"><strong>Emplacement :</strong> {{ bon_sortie.emplacement.location|default:"—" }}</div>
+            <div class="col-md-4 mt-2"><strong>Commentaire :</strong> {{ bon_sortie.commentaire|default:"—" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white">Articles du bon de sortie</div>
+    <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>Article</th>
+                    <th>Quantité</th>
+                    <th>Unité</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ligne in bon_sortie.lignes.all %}
+                <tr>
+                    <td>{{ ligne.article.nom }}</td>
+                    <td>{{ ligne.quantite }}</td>
+                    <td>{{ ligne.article.unite_mesure }}</td>
+                    <td>
+                        <a href="{% url 'lignebonsortie_update' ligne.pk %}" class="btn btn-sm btn-outline-primary">✏️</a>
+                        <a href="{% url 'lignebonsortie_delete' ligne.pk %}" class="btn btn-sm btn-outline-danger">🗑️</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center small text-muted py-3">Aucun article</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "app/dashboard.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>{% if is_chef_chantier %}Mon équipe{% else %}Personnels{% endif %}</h2>
+    {% if not is_chef_chantier %}
+    <a href="{% url 'personnel_create' %}" class="btn btn-primary btn-sm">Nouveau personnel</a>
+    {% else %}
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">Retour au dashboard</a>
+    {% endif %}
+</div>
+
+<div class="row g-3">
+    {% for p in personnels %}
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card personnel-card shadow-sm h-100 text-center">
+            <div class="card-body">
+                <div class="avatar rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width:64px;height:64px;background:linear-gradient(135deg,#0d6efd,#6f42c1);color:#fff;font-size:1.5rem;font-weight:700;">
+                    {{ p.prenom|slice:":1" }}{{ p.nom|slice:":1" }}
+                </div>
+                <h5 class="card-title mb-1">{{ p.prenom }} {{ p.nom }}</h5>
+                <div class="small text-muted mb-1">
+                    {% if p.postnom %}{{ p.postnom }}<br>{% endif %}
+                    @{{ p.user.username }}
+                </div>
+                <div class="mb-2">
+                    {% if p.fonction %}
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ p.fonction.nom }}</span>
+                    {% else %}
+                    <span class="badge bg-light text-muted border">Sans fonction</span>
+                    {% endif %}
+                </div>
+                <div class="small text-muted mb-3">
+                    {% if p.telephone %}📞 {{ p.telephone }}{% endif %}
+                    {% if p.sexe %}<br>{% if p.sexe == "M" %}♂ Masculin{% else %}♀ Féminin{% endif %}{% endif %}
+                </div>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="{% url 'personnel_detail' p.pk %}" class="btn btn-sm btn-outline-secondary">Voir</a>
+                    {% if not is_chef_chantier %}
+                    <a href="{% url 'personnel_update' p.pk %}" class="btn btn-sm btn-outline-primary">Modifier</a>
+                    <a href="{% url 'personnel_delete' p.pk %}" class="btn btn-sm btn-outline-danger">Supprimer</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body text-center small text-muted py-5">
+                <div class="mb-2" style="font-size:2.5rem;">👥</div>
+                Aucun personnel
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if is_paginated %}
+<nav class="mt-3">
+  <ul class="pagination">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Préc</a></li>
+    {% endif %}
+    <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Suiv</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

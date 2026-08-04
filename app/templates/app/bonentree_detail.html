@@ -1,0 +1,57 @@
+{% extends "app/dashboard.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Bon d'entrée {{ bon_entree.reference }}</h2>
+    <div>
+        <a href="{% url 'lignebonentree_create' bon_entree.pk %}" class="btn btn-success btn-sm">+ Ajouter un article</a>
+        <a href="{% url 'bonentree_update' bon_entree.pk %}" class="btn btn-outline-primary btn-sm">Modifier</a>
+        <a href="{% url 'bonentree_list' %}" class="btn btn-outline-secondary btn-sm ms-2">Retour</a>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4"><strong>Référence :</strong> {{ bon_entree.reference }}</div>
+            <div class="col-md-4"><strong>Date :</strong> {{ bon_entree.date|date:"d/m/Y" }}</div>
+            <div class="col-md-4"><strong>Fournisseur :</strong> {{ bon_entree.fournisseur|default:"—" }}</div>
+            <div class="col-md-4 mt-2"><strong>Emplacement :</strong> {{ bon_entree.emplacement.location|default:"—" }}</div>
+            <div class="col-md-8 mt-2"><strong>Commentaire :</strong> {{ bon_entree.commentaire|default:"—" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white">Articles du bon d'entrée</div>
+    <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>Article</th>
+                    <th>Quantité</th>
+                    <th>Prix unitaire</th>
+                    <th>Total</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ligne in bon_entree.lignes.all %}
+                <tr>
+                    <td>{{ ligne.article.nom }}</td>
+                    <td>{{ ligne.quantite }} {{ ligne.article.unite_mesure }}</td>
+                    <td>{{ ligne.prix_unitaire }} FCFA</td>
+                    <td>{{ ligne.total_ligne }} FCFA</td>
+                    <td>
+                        <a href="{% url 'lignebonentree_update' ligne.pk %}" class="btn btn-sm btn-outline-primary">✏️</a>
+                        <a href="{% url 'lignebonentree_delete' ligne.pk %}" class="btn btn-sm btn-outline-danger">🗑️</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center small text-muted py-3">Aucun article</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

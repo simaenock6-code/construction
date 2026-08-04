@@ -1,0 +1,68 @@
+{% extends "app/dashboard.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Devis {{ devis.reference }}</h2>
+    <div>
+        <a href="{% url 'lignedevis_create' devis.pk %}" class="btn btn-warning btn-sm">+ Ajouter un article</a>
+        <a href="{% url 'devis_update' devis.pk %}" class="btn btn-outline-primary btn-sm">Modifier</a>
+        <a href="{% url 'devis_list' %}" class="btn btn-outline-secondary btn-sm ms-2">Retour</a>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4"><strong>Référence :</strong> {{ devis.reference }}</div>
+            <div class="col-md-4"><strong>Date :</strong> {{ devis.date|date:"d/m/Y" }}</div>
+            <div class="col-md-4"><strong>Client :</strong> {{ devis.client }}</div>
+            <div class="col-md-4 mt-2"><strong>Demande :</strong> {{ devis.demande.reference|default:"—" }}</div>
+            <div class="col-md-4 mt-2"><strong>Validité :</strong> {{ devis.validite_jours }} jours</div>
+            <div class="col-md-4 mt-2"><strong>Total :</strong> {{ devis.total_devis }} FCFA</div>
+            <div class="col-12 mt-2"><strong>Commentaire :</strong> {{ devis.commentaire|default:"—" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white">Articles du devis</div>
+    <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>Article</th>
+                    <th>Quantité</th>
+                    <th>Prix unitaire</th>
+                    <th>Total</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ligne in devis.lignes.all %}
+                <tr>
+                    <td>{{ ligne.article.nom }}</td>
+                    <td>{{ ligne.quantite }} {{ ligne.article.unite_mesure }}</td>
+                    <td>{{ ligne.prix_unitaire }} FCFA</td>
+                    <td>{{ ligne.total_ligne }} FCFA</td>
+                    <td>
+                        <a href="{% url 'lignedevis_update' ligne.pk %}" class="btn btn-sm btn-outline-primary">✏️</a>
+                        <a href="{% url 'lignedevis_delete' ligne.pk %}" class="btn btn-sm btn-outline-danger">🗑️</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center small text-muted py-3">Aucun article</td></tr>
+                {% endfor %}
+            </tbody>
+            {% if devis.lignes.all %}
+            <tfoot>
+                <tr>
+                    <td colspan="3" class="text-end fw-bold">Total général :</td>
+                    <td class="fw-bold">{{ devis.total_devis }} FCFA</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends "app/dashboard.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>{% if is_chef_chantier %}Mes demandes{% else %}Demandes{% endif %}</h2>
+    <div>
+        <a href="{% url 'demande_create' %}" class="btn btn-primary btn-sm">Nouvelle demande</a>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm ms-2">Retour au dashboard</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    {% for d in demandes %}
+    <div class="col-12 col-md-6 col-xl-4">
+        <div class="card demande-card shadow-sm h-100">
+            <div class="card-header d-flex justify-content-between align-items-center {% if d.statut == 'NOUVEAU' %}bg-secondary{% elif d.statut == 'EN_COURS' %}bg-primary{% elif d.statut == 'VALIDE' %}bg-success{% elif d.statut == 'REFUSE' %}bg-danger{% else %}bg-secondary{% endif %} text-white">
+                <strong class="small">{{ d.reference|default:d.id }}</strong>
+                {% if d.statut == "NOUVEAU" %}
+                    <span class="badge bg-light text-dark">Nouveau</span>
+                {% elif d.statut == "EN_COURS" %}
+                    <span class="badge bg-light text-primary">En cours</span>
+                {% elif d.statut == "VALIDE" %}
+                    <span class="badge bg-light text-success">Validé</span>
+                {% elif d.statut == "REFUSE" %}
+                    <span class="badge bg-light text-danger">Refusé</span>
+                {% else %}
+                    <span class="badge bg-light text-dark">{{ d.statut }}</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <h5 class="card-title mb-1">
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 fs-6">{{ d.type_demande.nom }}</span>
+                </h5>
+                <div class="small text-muted mb-2">
+                    {% if d.demandeur %}
+                        👤 {{ d.demandeur }}
+                    {% else %}
+                        👤 <em>Demandeur non renseigné</em>
+                    {% endif %}
+                </div>
+                <div class="small text-muted mb-3">📅 {{ d.date }}</div>
+
+                <div class="mb-2">
+                    <div class="small text-uppercase text-muted fw-bold mb-1">Articles demandés</div>
+                    <div>
+                        {% for ligne in d.lignes.all %}
+                            <span class="badge bg-light text-dark border mb-1">
+                                {{ ligne.article.nom }} ×{{ ligne.quantite }}
+                                {% if not is_chef_chantier %}
+                                <a href="{% url 'lignedemande_update' ligne.pk %}" class="text-primary ms-1" title="Modifier">✏️</a>
+                                <a href="{% url 'lignedemande_delete' ligne.pk %}" class="text-danger ms-1" title="Supprimer">🗑️</a>
+                                {% endif %}
+                            </span>
+                        {% empty %}
+                            <span class="small text-muted">—</span>
+                        {% endfor %}
+                    </div>
+                    {% if not is_chef_chantier %}
+                    <a href="{% url 'lignedemande_create' d.pk %}" class="btn btn-sm btn-outline-primary mt-2">+ Ajouter un article</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% if not is_chef_chantier %}
+            <div class="card-footer d-flex gap-2">
+                <a href="{% url 'demande_update' d.pk %}" class="btn btn-sm btn-outline-primary">Modifier</a>
+                <a href="{% url 'demande_delete' d.pk %}" class="btn btn-sm btn-outline-danger">Supprimer</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body text-center small text-muted py-5">
+                <div class="mb-2" style="font-size:2.5rem;">📥</div>
+                Aucune demande
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if is_paginated %}
+<nav class="mt-3">
+  <ul class="pagination">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Préc</a></li>
+    {% endif %}
+    <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Suiv</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

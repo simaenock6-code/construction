@@ -1,0 +1,21 @@
+{% extends "app/dashboard.html" %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h5 class="card-title">Détails du personnel</h5>
+    <dl class="row">
+      <dt class="col-sm-3">Utilisateur</dt><dd class="col-sm-9">{{ personnel.user.username }}</dd>
+      <dt class="col-sm-3">Nom</dt><dd class="col-sm-9">{{ personnel.nom }}</dd>
+      <dt class="col-sm-3">Prénom</dt><dd class="col-sm-9">{{ personnel.prenom }}</dd>
+      <dt class="col-sm-3">Fonction</dt><dd class="col-sm-9">{% if personnel.fonction %}{{ personnel.fonction.nom }}{% else %}&mdash;{% endif %}</dd>
+      <dt class="col-sm-3">Téléphone</dt><dd class="col-sm-9">{{ personnel.telephone }}</dd>
+      <dt class="col-sm-3">Adresse</dt><dd class="col-sm-9">{{ personnel.adresse }}</dd>
+    </dl>
+    <a href="{% url 'personnel_update' personnel.pk %}" class="btn btn-primary">Modifier</a>
+    <a href="{% url 'personnel_list' %}" class="btn btn-secondary">Retour</a>
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary ms-2">Retour au dashboard</a>
+  </div>
+</div>
+
+{% endblock %}

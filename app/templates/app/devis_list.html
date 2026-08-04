@@ -1,0 +1,91 @@
+{% extends "app/dashboard.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Devis</h2>
+    <div>
+        <a href="{% url 'devis_create' %}" class="btn btn-primary btn-sm">Nouveau devis</a>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm ms-2">Retour au dashboard</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    {% for d in devis_list %}
+    <div class="col-12 col-md-6 col-xl-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <strong class="small">{{ d.reference }}</strong>
+                <span class="badge bg-light text-dark">{{ d.date|date:"d/m/Y" }}</span>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title mb-1">
+                    <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 fs-6">
+                        <i class="bi bi-file-earmark-text"></i> Devis
+                    </span>
+                </h5>
+                <div class="small text-muted mb-2">
+                    👤 {{ d.client }}
+                </div>
+                <div class="small text-muted mb-2">
+                    {% if d.demande %}📋 {{ d.demande.reference|default:d.demande.id }}{% else %}📋 <em>Aucune demande liée</em>{% endif %}
+                </div>
+                <div class="small text-muted mb-2">
+                    ⏳ Validité : {{ d.validite_jours }} jours
+                </div>
+                <div class="mb-2">
+                    <div class="small text-uppercase text-muted fw-bold mb-1">Articles</div>
+                    <div>
+                        {% for ligne in d.lignes.all %}
+                            <span class="badge bg-light text-dark border mb-1">
+                                {{ ligne.article.nom }} ×{{ ligne.quantite }}
+                                {% if ligne.prix_unitaire %} · {{ ligne.prix_unitaire }} FCFA{% endif %}
+                            </span>
+                        {% empty %}
+                            <span class="small text-muted">—</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% if d.lignes.all %}
+                <div class="text-end mt-2">
+                    <strong>Total : {{ d.total_devis }} FCFA</strong>
+                </div>
+                {% endif %}
+                {% if d.commentaire %}
+                <p class="small text-muted mb-2">{{ d.commentaire|truncatechars:100 }}</p>
+                {% endif %}
+            </div>
+            <div class="card-footer d-flex gap-2">
+                <a href="{% url 'devis_detail' d.pk %}" class="btn btn-sm btn-outline-secondary">Voir</a>
+                <a href="{% url 'lignedevis_create' d.pk %}" class="btn btn-sm btn-outline-warning">+ Article</a>
+                <a href="{% url 'devis_update' d.pk %}" class="btn btn-sm btn-outline-primary">Modifier</a>
+                <a href="{% url 'devis_delete' d.pk %}" class="btn btn-sm btn-outline-danger">Supprimer</a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body text-center small text-muted py-5">
+                <div class="mb-2" style="font-size:2.5rem;">📄</div>
+                Aucun devis
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if is_paginated %}
+<nav class="mt-3">
+  <ul class="pagination">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Préc</a></li>
+    {% endif %}
+    <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Suiv</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

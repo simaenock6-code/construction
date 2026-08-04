@@ -1,0 +1,200 @@
+{% extends "app/dashboard.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">{% if view.object %}Modifier la demande {{ view.object.reference|default:view.object.id }}{% else %}Nouvelle demande{% endif %}</h5>
+        <form method="post">
+            {% csrf_token %}
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                Veuillez corriger les erreurs ci-dessous.
+            </div>
+            {% endif %}
+            {{ form.non_field_errors }}
+            <div class="row">
+                <div class="col-md-6 mb-3">{{ form.type_demande.label_tag }}{{ form.type_demande }}{{ form.type_demande.errors }}</div>
+                <div class="col-md-6 mb-3">{{ form.demandeur.label_tag }}{{ form.demandeur }}{{ form.demandeur.errors }}</div>
+                <div class="col-md-6 mb-3">{{ form.date.label_tag }}{{ form.date }}{{ form.date.errors }}</div>
+            </div>
+
+            <!-- Section des articles demandés -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Articles demandés</h6>
+                </div>
+                <div class="card-body">
+                    {% if view.object %}
+                    <!-- Afficher les lignes existantes -->
+                    <div id="lignes-existantes">
+                        {% for ligne in view.object.lignes.all %}
+                        <div class="row mb-2">
+                            <div class="col-md-5">
+                                <label class="form-label">Article</label>
+                                <input type="text" class="form-control" value="{{ ligne.article.nom }}" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Quantité</label>
+                                <input type="number" class="form-control" value="{{ ligne.quantite }}" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Commentaire</label>
+                                <input type="text" class="form-control" value="{{ ligne.commentaire }}" readonly>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Formulaire pour ajouter une ligne -->
+                    <div id="ajout-ligne" class="{% if view.object %}mt-3{% endif %}">
+                        <h6 class="mb-3">Ajouter un article</h6>
+                        <div class="row">
+                            <div class="col-md-5">
+                                <label for="id_article" class="form-label">Article</label>
+                                <select name="article" id="id_article" class="form-control">
+                                    <option value="">Sélectionner un article</option>
+                                    {% for article in articles %}
+                                    <option value="{{ article.id }}">{{ article.nom }} ({{ article.unite_mesure }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="id_quantite" class="form-label">Quantité</label>
+                                <input type="number" name="quantite" id="id_quantite" class="form-control" min="1" value="1">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="id_commentaire" class="form-label">Commentaire</label>
+                                <input type="text" name="commentaire" id="id_commentaire" class="form-control" placeholder="Optionnel">
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-success" onclick="ajouterLigne()">
+                                <i class="bi bi-plus-circle"></i> Ajouter l'article
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Liste des articles ajoutés -->
+                    <div id="liste-articles" class="mt-3" style="display:none;">
+                        <h6 class="mb-2">Articles à ajouter :</h6>
+                        <div id="articles-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> {% if view.object %}Enregistrer{% else %}Créer la demande{% endif %}
+                </button>
+                <a href="{% url 'demande_list' %}" class="btn btn-secondary">Annuler</a>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary ms-2">Retour au dashboard</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let articlesAjoutes = [];
+
+function ajouterLigne() {
+    const articleSelect = document.getElementById('id_article');
+    const quantiteInput = document.getElementById('id_quantite');
+    const commentaireInput = document.getElementById('id_commentaire');
+
+    const articleId = articleSelect.value;
+    const articleNom = articleSelect.options[articleSelect.selectedIndex].text;
+    const quantite = quantiteInput.value;
+    const commentaire = commentaireInput.value;
+
+    if (!articleId) {
+        alert('Veuillez sélectionner un article');
+        return;
+    }
+
+    if (!quantite || quantite < 1) {
+        alert('Veuillez entrer une quantité valide');
+        return;
+    }
+
+    // Vérifier si l'article n'est pas déjà ajouté
+    if (articlesAjoutes.find(a => a.articleId === articleId)) {
+        alert('Cet article est déjà dans la liste');
+        return;
+    }
+
+    articlesAjoutes.push({
+        articleId: articleId,
+        articleNom: articleNom,
+        quantite: quantite,
+        commentaire: commentaire
+    });
+
+    afficherArticles();
+
+    // Réinitialiser les champs
+    articleSelect.value = '';
+    quantiteInput.value = '1';
+    commentaireInput.value = '';
+}
+
+function supprimerArticle(index) {
+    articlesAjoutes.splice(index, 1);
+    afficherArticles();
+}
+
+function afficherArticles() {
+    const container = document.getElementById('articles-container');
+    const listeDiv = document.getElementById('liste-articles');
+
+    if (articlesAjoutes.length === 0) {
+        listeDiv.style.display = 'none';
+        return;
+    }
+
+    listeDiv.style.display = 'block';
+    container.innerHTML = '';
+
+    articlesAjoutes.forEach((article, index) => {
+        const div = document.createElement('div');
+        div.className = 'row mb-2';
+        div.innerHTML = `
+            <div class="col-md-5">
+                <input type="text" class="form-control" value="${article.articleNom}" readonly>
+            </div>
+            <div class="col-md-3">
+                <input type="number" class="form-control" value="${article.quantite}" readonly>
+            </div>
+            <div class="col-md-3">
+                <input type="text" class="form-control" value="${article.commentaire}" readonly>
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-danger btn-sm" onclick="supprimerArticle(${index})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// Avant la soumission du formulaire, ajouter les articles dans des champs cachés
+document.querySelector('form').addEventListener('submit', function(e) {
+    // Supprimer les anciens champs
+    document.querySelectorAll('.ligne-demande').forEach(el => el.remove());
+
+    articlesAjoutes.forEach((article, index) => {
+        const form = document.querySelector('form');
+
+        // Créer des champs cachés pour chaque article
+        const articleInput = document.createElement('input');
+        articleInput.type = 'hidden';
+        articleInput.name = 'lignes';
+        articleInput.value = JSON.stringify(article);
+        articleInput.className = 'ligne-demande';
+        form.appendChild(articleInput);
+    });
+});
+</script>
+
+{% endblock %}

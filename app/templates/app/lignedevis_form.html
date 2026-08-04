@@ -1,0 +1,26 @@
+{% extends "app/dashboard.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">
+            {% if view.object %}Modifier{% else %}Nouvelle{% endif %} ligne de devis
+            {% if devis %} — {{ devis.reference }}{% endif %}
+        </h5>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            <div class="row">
+                <div class="col-md-6 mb-3">{{ form.article.label_tag }}{{ form.article }}{{ form.article.errors }}</div>
+                <div class="col-md-3 mb-3">{{ form.quantite.label_tag }}{{ form.quantite }}{{ form.quantite.errors }}</div>
+                <div class="col-md-3 mb-3">{{ form.prix_unitaire.label_tag }}{{ form.prix_unitaire }}{{ form.prix_unitaire.errors }}</div>
+            </div>
+            <div class="mt-3">
+                <button class="btn btn-primary">Enregistrer</button>
+                <a href="{% url 'devis_list' %}" class="btn btn-secondary">Annuler</a>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary ms-2">Retour au dashboard</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

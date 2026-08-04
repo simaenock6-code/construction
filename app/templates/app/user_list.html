@@ -1,0 +1,98 @@
+{% extends "app/dashboard.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Utilisateurs</h2>
+    <div>
+        <a href="{% url 'personnel_create' %}" class="btn btn-primary btn-sm">Nouvel utilisateur</a>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm ms-2">Retour au dashboard</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    {% for u in users %}
+    <div class="col-12 col-md-6 col-xl-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:56px;height:56px;background:linear-gradient(135deg,#4f46e5,#8b5cf6);color:#fff;font-size:1.3rem;font-weight:700;flex-shrink:0;">
+                        {{ u.get_full_name|default:u.username|slice:":1"|upper }}
+                    </div>
+                    <div>
+                        <h5 class="card-title mb-0">{{ u.get_full_name|default:u.username }}</h5>
+                        <div class="small text-muted">@{{ u.username }}</div>
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    {% if u.is_superuser %}
+                        <span class="badge bg-danger">Superutilisateur</span>
+                    {% elif u.is_staff %}
+                        <span class="badge bg-warning text-dark">Staff</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Utilisateur</span>
+                    {% endif %}
+                    {% if u.is_active %}
+                        <span class="badge bg-success">Actif</span>
+                    {% else %}
+                        <span class="badge bg-danger">Inactif</span>
+                    {% endif %}
+                </div>
+
+                {% if u.personnel %}
+                <div class="small text-muted mb-1">
+                    <i class="bi bi-person-badge"></i>
+                    {% if u.personnel.fonction %}{{ u.personnel.fonction.nom }}{% else %}Sans fonction{% endif %}
+                </div>
+                <div class="small text-muted mb-1">
+                    <i class="bi bi-geo-alt"></i>
+                    {% if u.personnel.chantier %}{{ u.personnel.chantier.location }}{% else %}Aucun chantier{% endif %}
+                </div>
+                <div class="small text-muted mb-1">
+                    <i class="bi bi-telephone"></i>
+                    {% if u.personnel.telephone %}{{ u.personnel.telephone }}{% else %}—{% endif %}
+                </div>
+                {% else %}
+                <div class="small text-muted fst-italic mb-1">Aucun profil personnel associé</div>
+                {% endif %}
+
+                <div class="small text-muted mb-3">
+                    <i class="bi bi-calendar"></i> Dernière connexion : {{ u.last_login|date:"d/m/Y H:i"|default:"Jamais" }}
+                </div>
+
+                <div class="d-flex gap-2">
+                    {% if u.personnel %}
+                    <a href="{% url 'personnel_detail' u.personnel.pk %}" class="btn btn-sm btn-outline-secondary">Voir profil</a>
+                    <a href="{% url 'personnel_update' u.personnel.pk %}" class="btn btn-sm btn-outline-primary">Modifier</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body text-center small text-muted py-5">
+                <div class="mb-2" style="font-size:2.5rem;">👤</div>
+                Aucun utilisateur
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if is_paginated %}
+<nav class="mt-3">
+  <ul class="pagination">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Préc</a></li>
+    {% endif %}
+    <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Suiv</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% endblock %}
