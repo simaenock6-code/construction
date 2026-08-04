@@ -7,6 +7,10 @@ from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 from django.utils.crypto import get_random_string
 from django.utils import timezone
+import logging
+
+# Configuration du logger pour les opérations critiques
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -28,107 +32,6 @@ from .forms import (
     EmplacementForm, FonctionForm, LigneBonEntreeForm, LigneBonSortieForm,
     LigneDemandeForm, LigneDevisForm, PersonnelForm, StockForm, TypeDemandeForm,
 )
-
-# Try to import forms from forms.py, fallback to local definitions if import fails
-try:
-    from .forms import (
-        ArticleForm, DemandeForm, EmplacementForm, FonctionForm,
-        LigneDemandeForm, PersonnelForm, StockForm, TypeDemandeForm,
-    )
-except Exception:
-    from django import forms
-
-    class PersonnelForm(forms.ModelForm):
-        class Meta:
-            model = Personnel
-            fields = [
-                'user', 'fonction', 'nom', 'postnom', 'prenom', 'telephone',
-                'sexe', 'datenaiss', 'lieunaiss', 'adresse'
-            ]
-            widgets = {
-                'datenaiss': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-                'adresse': forms.TextInput(attrs={'class': 'form-control'}),
-            }
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            for name, field in self.fields.items():
-                if name not in ('datenaiss',):
-                    field.widget.attrs.setdefault('class', 'form-control')
-
-    class DemandeForm(forms.ModelForm):
-        class Meta:
-            model = Demande
-            fields = ['type_demande', 'demandeur', 'date']
-            widgets = {
-                'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            }
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            for name, field in self.fields.items():
-                field.widget.attrs.setdefault('class', 'form-control')
-
-    class ArticleForm(forms.ModelForm):
-        class Meta:
-            model = Article
-            fields = ['code', 'nom', 'description', 'unite_mesure', 'seuil_minimum']
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            for name, field in self.fields.items():
-                field.widget.attrs.setdefault('class', 'form-control')
-
-    class StockForm(forms.ModelForm):
-        class Meta:
-            model = Stock
-            fields = ['article', 'quantite_disponible', 'emplacement']
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            for name, field in self.fields.items():
-                field.widget.attrs.setdefault('class', 'form-control')
-
-    class FonctionForm(forms.ModelForm):
-        class Meta:
-            model = Fonction
-            fields = ['code', 'nom', 'description']
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            for name, field in self.fields.items():
-                field.widget.attrs.setdefault('class', 'form-control')
-
-    class TypeDemandeForm(forms.ModelForm):
-        class Meta:
-            model = TypeDemande
-            fields = ['nom', 'description']
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            for name, field in self.fields.items():
-                field.widget.attrs.setdefault('class', 'form-control')
-
-    class EmplacementForm(forms.ModelForm):
-        class Meta:
-            model = Emplacement
-            fields = ['code', 'location']
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            for name, field in self.fields.items():
-                field.widget.attrs.setdefault('class', 'form-control')
-
-    class LigneDemandeForm(forms.ModelForm):
-        class Meta:
-            model = LigneDemande
-            fields = ['article', 'quantite', 'commentaire']
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            for name, field in self.fields.items():
-                field.widget.attrs.setdefault('class', 'form-control')
-
 
 @login_required(login_url='login')
 def dashboard(request):
@@ -158,6 +61,10 @@ def dashboard(request):
     is_chef_chantier = role_code == "CHC"
     is_resp_logistique = role_code == "RL"
 
+    # Pagination parameters
+    page = request.GET.get('page', 1)
+    items_per_page = 10
+    
     # Statistiques par statut de demande
     statuts_demandes = {
         "NOUVEAU": demandes_qs.filter(statut="NOUVEAU").count(),
@@ -174,8 +81,8 @@ def dashboard(request):
     # Équipe du chantier (personnels rattachés)
     equipe_chantier = personnels_qs.select_related("fonction", "user").order_by("nom")[:10]
 
-    # Dernières demandes avec lignes d'articles
-    demandes_list = demandes_qs.select_related("type_demande", "demandeur").prefetch_related("lignes__article").order_by('-date')[:5]
+    # Dernières demandes avec lignes d'articles (avec pagination)
+    demandes_list = demandes_qs.select_related("type_demande", "demandeur").prefetch_related("lignes__article").order_by('-date')[:items_per_page]
 
     # ===== Données spécifiques au Responsable Logistique =====
     bons_entree_count = BonEntree.objects.count()
@@ -183,16 +90,16 @@ def dashboard(request):
     devis_count = Devis.objects.count()
 
     # Derniers bons d'entrée
-    bons_entree_list = BonEntree.objects.select_related("emplacement").prefetch_related("lignes__article").order_by('-date')[:5]
+    bons_entree_list = BonEntree.objects.select_related("emplacement").prefetch_related("lignes__article").order_by('-date')[:items_per_page]
 
     # Derniers bons de sortie
-    bons_sortie_list = BonSortie.objects.select_related("demande", "emplacement").prefetch_related("lignes__article").order_by('-date')[:5]
+    bons_sortie_list = BonSortie.objects.select_related("demande", "emplacement").prefetch_related("lignes__article").order_by('-date')[:items_per_page]
 
     # Derniers devis
-    devis_list = Devis.objects.select_related("demande").prefetch_related("lignes__article").order_by('-date')[:5]
+    devis_list = Devis.objects.select_related("demande").prefetch_related("lignes__article").order_by('-date')[:items_per_page]
 
-    # Demandes reçues (toutes les demandes pour le responsable logistique)
-    demandes_recues = demandes_qs.select_related("type_demande", "demandeur").prefetch_related("lignes__article").order_by('-date')[:10]
+    # Demandes reçues (toutes les demandes pour le responsable logistique) avec pagination
+    demandes_recues = demandes_qs.select_related("type_demande", "demandeur").prefetch_related("lignes__article").order_by('-date')[:items_per_page]
 
     # Vérification de la disponibilité du stock pour chaque demande
     demandes_avec_stock = []
@@ -305,7 +212,7 @@ class PersonnelCreateView(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy('personnel_list')
 
     def form_valid(self, form):
-        User = get_user_model() # This logic should be moved to the form.
+        User = get_user_model()
         prenom = form.cleaned_data.get('prenom', '')
         nom = form.cleaned_data.get('nom', '')
         base = slugify(f"{prenom}.{nom}") or 'user'
@@ -324,11 +231,9 @@ class PersonnelCreateView(LoginRequiredMixin, CreateView):
         form.instance.user = user
         response = super().form_valid(form)
 
-        # Optionally: log credentials to console (developer) — remove in production
-        try:
-            print(f"Created user for Personnel: {user.username} (password: {password})")
-        except Exception:
-            pass
+        # Logging de la création d'utilisateur
+        logger.info(f"Création utilisateur: {user.username} pour personnel {prenom} {nom}")
+        print(f"Created user for Personnel: {user.username} (password: {password})")
 
         return response
 
@@ -761,6 +666,10 @@ class LigneBonEntreeCreateView(LoginRequiredMixin, CreateView):
         )
         stock.quantite_disponible += form.instance.quantite
         stock.save()
+        
+        # Logging de l'entrée de stock
+        logger.info(f"Entrée stock: {article.nom} x{form.instance.quantite} - {bon_entree.reference}")
+        
         return response
 
     def get_success_url(self):
@@ -850,15 +759,65 @@ class BonSortieCreateView(LoginRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
+        # Validation du stock avant création du bon de sortie
+        demande_id = self.request.GET.get('demande')
+        if demande_id:
+            try:
+                demande = Demande.objects.get(pk=demande_id)
+                emplacement = form.instance.emplacement
+                
+                # Vérifier la disponibilité du stock pour chaque ligne de demande
+                stock_insuffisant = []
+                for ligne_demande in demande.lignes.all():
+                    article = ligne_demande.article
+                    quantite_requise = ligne_demande.quantite
+                    
+                    # Récupérer le stock disponible pour cet article et cet emplacement
+                    if emplacement:
+                        stock = Stock.objects.filter(
+                            article=article,
+                            emplacement=emplacement
+                        ).first()
+                        quantite_disponible = stock.quantite_disponible if stock else 0
+                    else:
+                        quantite_disponible = article.quantite_totale()
+                    
+                    if quantite_disponible < quantite_requise:
+                        stock_insuffisant.append({
+                            'article': article.nom,
+                            'requis': quantite_requise,
+                            'disponible': quantite_disponible,
+                            'manque': quantite_requise - quantite_disponible
+                        })
+                
+                # Si stock insuffisant, afficher une erreur et empêcher la création
+                if stock_insuffisant:
+                    from django.contrib import messages
+                    messages.error(
+                        self.request,
+                        "Stock insuffisant pour les articles suivants :"
+                    )
+                    for item in stock_insuffisant:
+                        messages.error(
+                            self.request,
+                            f"• {item['article']}: requis {item['requis']}, disponible {item['disponible']}, manque {item['manque']}"
+                        )
+                    return self.form_invalid(form)
+                
+            except Demande.DoesNotExist:
+                pass
+        
         response = super().form_valid(form)
         
         # Mettre à jour le statut de la demande si elle existe
-        demande_id = self.request.GET.get('demande')
         if demande_id:
             try:
                 demande = Demande.objects.get(pk=demande_id)
                 demande.statut = "VALIDE"
                 demande.save()
+                
+                # Logging de la validation de demande
+                logger.info(f"Demande {demande.reference} validée - Bon de sortie créé")
             except Demande.DoesNotExist:
                 pass
         
@@ -899,6 +858,10 @@ class LigneBonSortieCreateView(LoginRequiredMixin, CreateView):
         form.instance.bon_sortie = bon_sortie
         response = super().form_valid(form)
         # La décrémentation du stock est maintenant gérée automatiquement par le modèle LigneBonSortie.save()
+        
+        # Logging de la sortie de stock
+        logger.info(f"Sortie stock: {form.instance.article.nom} x{form.instance.quantite} - {bon_sortie.reference}")
+        
         return response
 
     def get_success_url(self):
