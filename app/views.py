@@ -374,6 +374,7 @@ class DemandeListView(LoginRequiredMixin, ListView):
         personnel = getattr(self.request.user, "personnel", None)
         role_code = personnel.fonction.code if personnel and personnel.fonction else ""
         context["is_chef_chantier"] = role_code == "CHC"
+        context["is_resp_logistique"] = role_code == "RL"
         return context
 
 
@@ -705,7 +706,12 @@ class BonSortieListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return super().get_queryset().select_related("demande", "emplacement").prefetch_related("lignes__article")
+        return (
+            super()
+            .get_queryset()
+            .select_related("demande", "emplacement")
+            .prefetch_related("lignes__article")
+        )
 
 
 class BonSortieCreateView(LoginRequiredMixin, CreateView):
@@ -755,7 +761,7 @@ class BonSortieCreateView(LoginRequiredMixin, CreateView):
                         can_delete=False
                     )
                     initial_lignes = [
-                        {'article': ligne.article, 'quantite': ligne.quantite}
+                        {'article': ligne.article.pk, 'quantite': ligne.quantite}
                         for ligne in demande.lignes.all()
                     ]
                     if self.request.POST:
@@ -770,79 +776,101 @@ class BonSortieCreateView(LoginRequiredMixin, CreateView):
                 # Passer l'emplacement (chantier du demandeur) au contexte
                 if demande.demandeur and demande.demandeur.chantier:
                     context['emplacement'] = demande.demandeur.chantier
+                # Passer les lignes de la demande pour l'affichage des détails
+                context['lignes_demande'] = demande.lignes.all()
             except Demande.DoesNotExist:
                 pass
         return context
 
     def form_valid(self, form):
-        # Validation du stock avant création du bon de sortie
         demande_id = self.request.GET.get('demande')
+        demande = None
         if demande_id:
             try:
                 demande = Demande.objects.get(pk=demande_id)
-                emplacement = form.instance.emplacement
-                
-                # Vérifier la disponibilité du stock pour chaque ligne de demande
-                stock_insuffisant = []
-                for ligne_demande in demande.lignes.all():
-                    article = ligne_demande.article
-                    quantite_requise = ligne_demande.quantite
-                    
-                    # Récupérer le stock disponible pour cet article et cet emplacement
-                    if emplacement:
-                        stock = Stock.objects.filter(
-                            article=article,
-                            emplacement=emplacement
-                        ).first()
-                        quantite_disponible = stock.quantite_disponible if stock else 0
-                    else:
-                        quantite_disponible = article.quantite_totale()
-                    
-                    if quantite_disponible < quantite_requise:
-                        stock_insuffisant.append({
-                            'article': article.nom,
-                            'requis': quantite_requise,
-                            'disponible': quantite_disponible,
-                            'manque': quantite_requise - quantite_disponible
-                        })
-                
-                # Si stock insuffisant, afficher une erreur et empêcher la création
-                if stock_insuffisant:
-                    from django.contrib import messages
+            except Demande.DoesNotExist:
+                demande = None
+
+        if demande:
+            emplacement = form.instance.emplacement
+
+            stock_insuffisant = []
+            for ligne_demande in demande.lignes.all():
+                article = ligne_demande.article
+                quantite_requise = ligne_demande.quantite
+
+                if emplacement:
+                    stock = Stock.objects.filter(
+                        article=article,
+                        emplacement=emplacement
+                    ).first()
+                    quantite_disponible = stock.quantite_disponible if stock else 0
+                else:
+                    quantite_disponible = article.quantite_totale()
+
+                if quantite_disponible < quantite_requise:
+                    stock_insuffisant.append({
+                        'article': article.nom,
+                        'requis': quantite_requise,
+                        'disponible': quantite_disponible,
+                        'manque': quantite_requise - quantite_disponible,
+                    })
+
+            if stock_insuffisant:
+                from django.contrib import messages
+                messages.error(self.request, "Stock insuffisant pour les articles suivants :")
+                for item in stock_insuffisant:
                     messages.error(
                         self.request,
-                        "Stock insuffisant pour les articles suivants :"
+                        f"• {item['article']}: requis {item['requis']}, disponible {item['disponible']}, manque {item['manque']}"
                     )
-                    for item in stock_insuffisant:
-                        messages.error(
-                            self.request,
-                            f"• {item['article']}: requis {item['requis']}, disponible {item['disponible']}, manque {item['manque']}"
-                        )
-                    return self.form_invalid(form)
-                
+                return self.form_invalid(form)
+
+        response = super().form_valid(form)
+
+        lignes_formset = None
+        if demande_id:
+            try:
+                demande = Demande.objects.get(pk=demande_id)
+                LigneBonSortieFormSet = inlineformset_factory(
+                    BonSortie,
+                    LigneBonSortie,
+                    form=LigneBonSortieForm,
+                    extra=0,
+                    can_delete=False,
+                )
+                initial_lignes = [
+                    {'article': ligne.article.pk, 'quantite': ligne.quantite}
+                    for ligne in demande.lignes.all()
+                ]
+                lignes_formset = LigneBonSortieFormSet(
+                    self.request.POST,
+                    instance=self.object,
+                    initial=initial_lignes,
+                )
             except Demande.DoesNotExist:
                 pass
-        
-        response = super().form_valid(form)
-        
-        # Sauvegarder les lignes de bon de sortie si formset présent
-        lignes_formset = self.get_context_data().get('lignes_formset')
-        if lignes_formset and lignes_formset.is_valid():
-            lignes_formset.instance = self.object
-            lignes_formset.save()
-        
-        # Mettre à jour le statut de la demande si elle existe
+
+        if lignes_formset is not None:
+            if lignes_formset.is_valid():
+                lignes_formset.save()
+            else:
+                from django.contrib import messages
+                messages.error(
+                    self.request,
+                    "Impossible d'enregistrer les articles du bon de sortie. Vérifiez les lignes saisies."
+                )
+                return self.form_invalid(form)
+
         if demande_id:
             try:
                 demande = Demande.objects.get(pk=demande_id)
                 demande.statut = "VALIDE"
                 demande.save()
-                
-                # Logging de la validation de demande
                 logger.info(f"Demande {demande.reference} validée - Bon de sortie créé")
             except Demande.DoesNotExist:
                 pass
-        
+
         return response
 
 

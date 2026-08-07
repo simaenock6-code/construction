@@ -60,7 +60,15 @@
                     {% endif %}
                 </div>
             </div>
-            {% if not is_chef_chantier %}
+            {% if is_resp_logistique %}
+            <div class="card-footer d-flex gap-2">
+                {% if d.statut != "VALIDE" and d.statut != "REFUSE" %}
+                <a href="{% url 'bonsortie_create' %}?demande={{ d.pk }}" class="btn btn-sm btn-success">
+                    <i class="bi bi-box-arrow-up"></i> Livrer
+                </a>
+                {% endif %}
+            </div>
+            {% elif not is_chef_chantier %}
             <div class="card-footer d-flex gap-2">
                 <a href="{% url 'demande_update' d.pk %}" class="btn btn-sm btn-outline-primary">Modifier</a>
                 <a href="{% url 'demande_delete' d.pk %}" class="btn btn-sm btn-outline-danger">Supprimer</a>

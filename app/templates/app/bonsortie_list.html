@@ -35,13 +35,17 @@
                 <div class="mb-2">
                     <div class="small text-uppercase text-muted fw-bold mb-1">Articles</div>
                     <div>
-                        {% for ligne in b.lignes.all %}
-                            <span class="badge bg-light text-dark border mb-1">
-                                {{ ligne.article.nom }} ×{{ ligne.quantite }}
-                            </span>
-                        {% empty %}
-                            <span class="small text-muted">—</span>
-                        {% endfor %}
+                        {% with lignes=b.lignes.all %}
+                            {% if lignes %}
+                                {% for ligne in lignes %}
+                                    <span class="badge bg-light text-dark border mb-1">
+                                        {{ ligne.article.nom }} ×{{ ligne.quantite }}
+                                    </span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="small text-muted">Aucun article</span>
+                            {% endif %}
+                        {% endwith %}
                     </div>
                 </div>
                 {% if b.commentaire %}
