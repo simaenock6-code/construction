@@ -28,7 +28,7 @@ class Command(BaseCommand):
         fonctions = [
             {"code": "MGR", "nom": "Manager", "description": "Gestion générale de l’activité."},
             {"code": "CHC", "nom": "Chef de chantier", "description": "Suivi opérationnel des chantiers."},
-            {"code": "RLOG", "nom": "Responsable logistique", "description": "Gestion des stocks et approvisionnements."},
+            {"code": "RL", "nom": "Responsable logistique", "description": "Gestion des stocks et approvisionnements."},
         ]
         for data in fonctions:
             Fonction.objects.update_or_create(code=data["code"], defaults=data)
@@ -79,7 +79,7 @@ class Command(BaseCommand):
             {"username": "manager", "email": "manager@example.com", "first_name": "Manager", "last_name": "Demo", "password": "demo", "role_code": "MGR", "is_admin": True},
             {"username": "chefchantier_a", "email": "chefchantier_a@example.com", "first_name": "Chef", "last_name": "Chantier A", "password": "demo", "role_code": "CHC", "is_admin": False},
             {"username": "chefchantier_b", "email": "chefchantier_b@example.com", "first_name": "Chef", "last_name": "Chantier B", "password": "demo", "role_code": "CHC", "is_admin": False},
-            {"username": "responsablelog", "email": "responsablelog@example.com", "first_name": "Responsable", "last_name": "Logistique", "password": "demo", "role_code": "RLOG", "is_admin": False},
+            {"username": "responsablelog", "email": "responsablelog@example.com", "first_name": "Responsable", "last_name": "Logistique", "password": "demo", "role_code": "RL", "is_admin": False},
         ]
         for person in personnes:
             user, created = User.objects.get_or_create(username=person["username"], defaults={
@@ -136,19 +136,28 @@ class Command(BaseCommand):
             {"type_demande": types_demande_map["Achat"], "demandeur": personnel_a, "date": timezone.now().date(), "statut": "NOUVEAU"},
             {"type_demande": types_demande_map["Maintenance"], "demandeur": personnel_b, "date": timezone.now().date(), "statut": "EN_COURS"},
         ]
-        Demande.objects.bulk_create([Demande(**d) for d in demandes], ignore_conflicts=True)
+        # Créer les demandes une par une pour que `save()` génère la référence unique.
+        for d in demandes:
+            Demande.objects.get_or_create(
+                type_demande=d["type_demande"],
+                demandeur=d["demandeur"],
+                date=d["date"],
+                statut=d["statut"],
+                defaults={"reference": None},
+            )
 
-        # Lignes de demande
-        lignes_demande_to_create = []
+        # Lignes de demande (get_or_create pour rester idempotent en cas de re-exécution)
         articles_for_lignes = list(articles_map.values())[:2]
         for demande in Demande.objects.all():
             for article in articles_for_lignes:
-                lignes_demande_to_create.append(LigneDemande(
+                quantite = 10 if article.code == "CEM001" else 5
+                LigneDemande.objects.get_or_create(
                     demande=demande,
                     article=article,
-                    quantite=10 if article.code == "CEM001" else 5,
-                    commentaire="Donnée de démonstration."
-                ))
-        LigneDemande.objects.bulk_create(lignes_demande_to_create, ignore_conflicts=True)
+                    defaults={
+                        "quantite": quantite,
+                        "commentaire": "Donnée de démonstration.",
+                    },
+                )
 
         self.stdout.write(self.style.SUCCESS("Données de démonstration créées."))

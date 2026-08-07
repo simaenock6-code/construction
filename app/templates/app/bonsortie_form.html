@@ -55,20 +55,37 @@
                 <div class="col-md-6 mb-3">{{ form.date.label_tag }}{{ form.date }}{{ form.date.errors }}</div>
                 <div class="col-md-6 mb-3">{{ form.demande.label_tag }}{{ form.demande }}{{ form.demande.errors }}</div>
                 <div class="col-md-6 mb-3">{{ form.destinataire.label_tag }}{{ form.destinataire }}{{ form.destinataire.errors }}</div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Emplacement:</label>
-                    {% if emplacement %}
-                        <input type="text" class="form-control" value="{{ emplacement.location }}" readonly>
-                        <input type="hidden" name="emplacement" value="{{ emplacement.id }}">
-                    {% elif form.emplacement.value %}
-                        <input type="text" class="form-control" value="{{ form.emplacement.value.location|default:form.emplacement.value }}" readonly>
-                        {{ form.emplacement }}
-                    {% else %}
-                        {{ form.emplacement }}
-                    {% endif %}
-                </div>
+                <div class="col-md-6 mb-3">{{ form.emplacement.label_tag }}{{ form.emplacement }}{{ form.emplacement.errors }}</div>
                 <div class="col-12 mb-3">{{ form.commentaire.label_tag }}{{ form.commentaire }}{{ form.commentaire.errors }}</div>
             </div>
+            
+            {% if lignes_formset %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Articles du bon de sortie</h6>
+                </div>
+                <div class="card-body">
+                    {{ lignes_formset.management_form }}
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Article</th>
+                                <th>Quantité</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for form in lignes_formset %}
+                            <tr>
+                                <td>{{ form.article }}{{ form.article.errors }}</td>
+                                <td>{{ form.quantite }}{{ form.quantite.errors }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+            
             <div class="mt-3">
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-box-arrow-up"></i> Enregistrer le bon de sortie

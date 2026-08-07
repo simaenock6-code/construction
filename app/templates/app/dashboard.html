@@ -700,6 +700,65 @@
                     <i class="bi bi-geo-alt-fill"></i> Emplacements
                 </a>
             </li>
+            {% else %}
+                {# Administrateur / Manager — navigation complète #}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'demande_list' %}active{% endif %}" href="{% url 'demande_list' %}">
+                        <i class="bi bi-inbox-fill"></i> Demandes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'demande_create' %}active{% endif %}" href="{% url 'demande_create' %}">
+                        <i class="bi bi-plus-circle-fill"></i> Créer une demande
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'stock_list' %}active{% endif %}" href="{% url 'stock_list' %}">
+                        <i class="bi bi-box-seam-fill"></i> Stocks
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'article_list' %}active{% endif %}" href="{% url 'article_list' %}">
+                        <i class="bi bi-box-fill"></i> Articles
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'personnel_list' %}active{% endif %}" href="{% url 'personnel_list' %}">
+                        <i class="bi bi-people-fill"></i> Personnels
+                    </a>
+                </li>
+                <div class="sidebar-section-title">Logistique</div>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'bonentree_list' %}active{% endif %}" href="{% url 'bonentree_list' %}">
+                        <i class="bi bi-box-arrow-in-down"></i> Bons d'entrée
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'bonsortie_list' %}active{% endif %}" href="{% url 'bonsortie_list' %}">
+                        <i class="bi bi-box-arrow-up"></i> Bons de sortie
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'devis_list' %}active{% endif %}" href="{% url 'devis_list' %}">
+                        <i class="bi bi-file-earmark-text"></i> Devis
+                    </a>
+                </li>
+                <div class="sidebar-section-title">Administration</div>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'fonction_list' %}active{% endif %}" href="{% url 'fonction_list' %}">
+                        <i class="bi bi-person-badge-fill"></i> Fonctions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'typedemande_list' %}active{% endif %}" href="{% url 'typedemande_list' %}">
+                        <i class="bi bi-tags-fill"></i> Types demande
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'emplacement_list' %}active{% endif %}" href="{% url 'emplacement_list' %}">
+                        <i class="bi bi-geo-alt-fill"></i> Emplacements
+                    </a>
+                </li>
             {% endif %}
         </ul>
 

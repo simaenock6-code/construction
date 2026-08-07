@@ -270,3 +270,16 @@ python manage.py test app
 ## Contact
 
 Pour toute question sur les corrections, consulter ce fichier ou les commentaires dans le code.
+
+__Comptes réels__ (script `create_accounts.py`) :
+
+- `chef.chantier` / `Chef@2026!` — Chef de chantier (Jean Kabila)
+- `resp.logistique` / `Logistique@2026!` — Responsable logistique (Marie Nzuzi)
+- `manager` / `Manager@2026!` — Manager (Paul Ilunga, superuser)
+
+__Comptes démo__ (`demo_data.py`) :
+
+- `manager` / `demo` (MGR, admin)
+- `chefchantier_a` / `demo` (CHC — chantier A)
+- `chefchantier_b` / `demo` (CHC — chantier B)
+- `responsablelog` / `demo` (RL)

@@ -243,7 +243,14 @@ class BonEntree(models.Model):
         verbose_name="Référence",
     )
     date = models.DateField(verbose_name="Date du bon d'entrée")
-    fournisseur = models.CharField(max_length=200, blank=True, verbose_name="Fournisseur")
+    fournisseur = models.ForeignKey(
+        Personnel,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bons_entree_fournisseur",
+        verbose_name="Fournisseur"
+    )
     emplacement = models.ForeignKey(
         Emplacement,
         on_delete=models.SET_NULL,
@@ -323,7 +330,14 @@ class BonSortie(models.Model):
         related_name="bons_sortie",
         verbose_name="Demande associée",
     )
-    destinataire = models.CharField(max_length=200, blank=True, verbose_name="Destinataire")
+    destinataire = models.ForeignKey(
+        Personnel,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bons_sortie_destinataire",
+        verbose_name="Destinataire"
+    )
     emplacement = models.ForeignKey(
         Emplacement,
         on_delete=models.SET_NULL,

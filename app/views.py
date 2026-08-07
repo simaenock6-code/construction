@@ -1,3 +1,4 @@
+from django.forms.models import inlineformset_factory
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.urls import reverse_lazy
@@ -723,25 +724,19 @@ class BonSortieCreateView(LoginRequiredMixin, CreateView):
                 initial['date'] = timezone.now().date()
                 # Pré-remplir le destinataire et l'emplacement avec les informations du demandeur
                 if demande.demandeur:
-                    demandeur = demande.demandeur
-                    # Construire le nom complet du demandeur
-                    nom_complet = " ".join(filter(None, [
-                        demandeur.prenom,
-                        demandeur.nom,
-                        demandeur.postnom
-                    ]))
-                    # Ajouter le nom de la fonction si disponible
-                    if demandeur.fonction:
-                        initial['destinataire'] = f"{nom_complet} - {demandeur.fonction.nom}"
-                    else:
-                        initial['destinataire'] = nom_complet
-                    
+                    initial['destinataire'] = demande.demandeur
                     # Pré-remplir l'emplacement avec le chantier du demandeur
-                    if demandeur.chantier:
-                        initial['emplacement'] = demandeur.chantier
+                    if demande.demandeur.chantier:
+                        initial['emplacement'] = demande.demandeur.chantier
             except Demande.DoesNotExist:
                 pass
         return initial
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['destinataire'].queryset = Personnel.objects.all()
+        form.fields['emplacement'].queryset = Emplacement.objects.all()
+        return form
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -750,7 +745,28 @@ class BonSortieCreateView(LoginRequiredMixin, CreateView):
             try:
                 demande = Demande.objects.get(pk=demande_id)
                 context['demande'] = demande
-                context['lignes_demande'] = demande.lignes.all()
+                # Générer le formset des lignes de bon de sortie pré-rempli avec la demande
+                if 'lignes_formset' not in kwargs:
+                    LigneBonSortieFormSet = inlineformset_factory(
+                        BonSortie,
+                        LigneBonSortie,
+                        form=LigneBonSortieForm,
+                        extra=0,
+                        can_delete=False
+                    )
+                    initial_lignes = [
+                        {'article': ligne.article, 'quantite': ligne.quantite}
+                        for ligne in demande.lignes.all()
+                    ]
+                    if self.request.POST:
+                        context['lignes_formset'] = LigneBonSortieFormSet(
+                            self.request.POST,
+                            initial=initial_lignes
+                        )
+                    else:
+                        context['lignes_formset'] = LigneBonSortieFormSet(
+                            initial=initial_lignes
+                        )
                 # Passer l'emplacement (chantier du demandeur) au contexte
                 if demande.demandeur and demande.demandeur.chantier:
                     context['emplacement'] = demande.demandeur.chantier
@@ -809,6 +825,12 @@ class BonSortieCreateView(LoginRequiredMixin, CreateView):
         
         response = super().form_valid(form)
         
+        # Sauvegarder les lignes de bon de sortie si formset présent
+        lignes_formset = self.get_context_data().get('lignes_formset')
+        if lignes_formset and lignes_formset.is_valid():
+            lignes_formset.instance = self.object
+            lignes_formset.save()
+        
         # Mettre à jour le statut de la demande si elle existe
         if demande_id:
             try:
@@ -829,6 +851,40 @@ class BonSortieUpdateView(LoginRequiredMixin, UpdateView):
     form_class = BonSortieForm
     template_name = "app/bonsortie_form.html"
     success_url = reverse_lazy('bonsortie_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Ajouter le formset des lignes de bon de sortie pour modification
+        if 'lignes_formset' not in context:
+            LigneBonSortieFormSet = inlineformset_factory(
+                BonSortie,
+                LigneBonSortie,
+                form=LigneBonSortieForm,
+                extra=0,
+                can_delete=False
+            )
+            if self.request.POST:
+                context['lignes_formset'] = LigneBonSortieFormSet(
+                    self.request.POST,
+                    instance=self.object
+                )
+            else:
+                context['lignes_formset'] = LigneBonSortieFormSet(
+                    instance=self.object
+                )
+        return context
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        lignes_formset = context.get('lignes_formset')
+        
+        if lignes_formset and lignes_formset.is_valid():
+            response = super().form_valid(form)
+            lignes_formset.instance = self.object
+            lignes_formset.save()
+            return response
+        else:
+            return self.form_invalid(form)
 
 
 class BonSortieDeleteView(LoginRequiredMixin, DeleteView):

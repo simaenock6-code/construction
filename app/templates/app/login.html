@@ -3,36 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Connexion</title>
+    <title>Connexion - Construction</title>
     {% load static %}
     <link href="{% static 'app/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --theme-gradient-start: #4f46e5;
+            --theme-gradient-mid: #7c3aed;
+            --theme-gradient-end: #9333ea;
+            --theme-shadow: rgba(79, 70, 229, 0.25);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            color: #1e293b;
+            background:
+                radial-gradient(1000px 600px at 15% 10%, rgba(99, 102, 241, 0.35), transparent 60%),
+                radial-gradient(900px 500px at 85% 90%, rgba(147, 51, 234, 0.30), transparent 60%),
+                linear-gradient(135deg, #eef2ff 0%, #f5f3ff 50%, #faf5ff 100%);
+            background-attachment: fixed;
+        }
+
+        .login-wrapper { width: 100%; max-width: 440px; }
+
+        .login-logo {
+            width: 64px; height: 64px;
+            margin: 0 auto 18px;
+            border-radius: 18px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 1.9rem;
+            background: linear-gradient(135deg, var(--theme-gradient-start), var(--theme-gradient-mid), var(--theme-gradient-end));
+            box-shadow: 0 12px 28px var(--theme-shadow);
+        }
+
+        .login-card {
+            background: #fff;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(30, 41, 59, 0.12);
+            padding: 34px 32px;
+        }
+
+        .login-card h1 { font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+        .login-sub { color: #64748b; font-size: 0.9rem; margin-bottom: 26px; }
+        .form-label { font-size: 0.85rem; font-weight: 600; color: #334155; }
+        .input-group-text { background: #f8fafc; border-color: #e2e8f0; color: #94a3b8; }
+
+        .form-control {
+            border-color: #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 0.95rem;
+        }
+        .form-control:focus { box-shadow: 0 0 0 3px var(--theme-shadow); border-color: var(--primary); }
+        .input-group > .input-group-text { border-radius: 10px 0 0 10px; border-right: 0; }
+        .input-group > .form-control { border-radius: 0 10px 10px 0; }
+
+        .btn-login {
+            width: 100%;
+            padding: 11px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, var(--theme-gradient-start), var(--theme-gradient-mid), var(--theme-gradient-end));
+            box-shadow: 0 8px 20px var(--theme-shadow);
+            transition: transform 0.12s ease, box-shadow 0.2s ease;
+        }
+        .btn-login:hover { color: #fff; transform: translateY(-1px); box-shadow: 0 12px 26px var(--theme-shadow); }
+        .btn-login:active { transform: translateY(0); }
+        .btn-login:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--theme-shadow), 0 12px 26px var(--theme-shadow); }
+
+        .btn-toggle-password {
+            border: 1px solid #e2e8f0;
+            border-left: 0;
+            border-radius: 0 10px 10px 0;
+            background: #f8fafc;
+            color: #94a3b8;
+            cursor: pointer;
+        }
+        .btn-toggle-password:hover { color: var(--primary); }
+        .btn-toggle-password .bi-eye-slash { display: none; }
+        .btn-toggle-password.showing .bi-eye { display: none; }
+        .btn-toggle-password.showing .bi-eye-slash { display: inline; }
+
+        .alert-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            padding: 10px 14px;
+            margin-bottom: 20px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .login-footer { text-align: center; margin-top: 22px; font-size: 0.85rem; color: #64748b; }
+        .login-footer a { color: var(--primary); font-weight: 600; }
+        .login-demo { font-size: 0.8rem; color: #94a3b8; margin-top: 18px; }
+    </style>
 </head>
-<body class="bg-light">
-    <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-md-5">
-                <div class="card shadow-sm">
-                    <div class="card-body p-4">
-                        <h1 class="h4 mb-3">Connexion</h1>
-                        <form method="post">
-                            {% csrf_token %}
-                            <div class="mb-3">
-                                <label for="id_username" class="form-label">Nom d’utilisateur</label>
-                                <input type="text" name="username" class="form-control" id="id_username" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="id_password" class="form-label">Mot de passe</label>
-                                <input type="password" name="password" class="form-control" id="id_password" required>
-                            </div>
-                            {% if form.errors %}
-                                <div class="alert alert-danger py-2">Nom d’utilisateur ou mot de passe incorrect.</div>
-                            {% endif %}
-                            <button type="submit" class="btn btn-primary w-100">Se connecter</button>
-                        </form>
+<body>
+    <div class="login-wrapper">
+        <div class="login-logo"><i class="bi bi-buildings"></i></div>
+        <div class="login-card">
+            <h1 class="text-center">Bienvenue</h1>
+            <p class="login-sub text-center">Connectez-vous à votre espace de construction</p>
+            {% if form.errors %}
+            <div class="alert-error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>Nom d'utilisateur ou mot de passe incorrect. Veuillez réessayer.</span>
+            </div>
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="id_username" class="form-label">Nom d'utilisateur</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                        <input type="text" name="username" class="form-control" id="id_username"
+                               placeholder="Votre nom d'utilisateur" autocomplete="username" autofocus required>
                     </div>
                 </div>
+                <div class="mb-4">
+                    <label for="id_password" class="form-label">Mot de passe</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        <input type="password" name="password" class="form-control" id="id_password"
+                               placeholder="Votre mot de passe" autocomplete="current-password" required>
+                        <button type="button" class="btn-toggle-password" id="togglePassword" aria-label="Afficher le mot de passe">
+                            <i class="bi bi-eye"></i><i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Se connecter
+                </button>
+            </form>
+
+            <div class="login-demo text-center d-none">
+                Admin de démo : <strong>manager / demo</strong>
             </div>
         </div>
+
+        <p class="login-footer">© 2026 Gestion de construction — Tous droits réservés.</p>
     </div>
+
+    <script>
+        const toggle = document.getElementById('togglePassword');
+        const pwd = document.getElementById('id_password');
+        toggle.addEventListener('click', () => {
+            const showing = pwd.type === 'text';
+            pwd.type = showing ? 'password' : 'text';
+            toggle.classList.toggle('showing', !showing);
+            toggle.setAttribute('aria-label', showing ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
+        });
+    </script>
 </body>
 </html>

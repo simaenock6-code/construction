@@ -131,15 +131,17 @@ class BonEntreeForm(forms.ModelForm):
         fields = ['date', 'fournisseur', 'emplacement', 'commentaire']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'fournisseur': forms.TextInput(attrs={'class': 'form-control'}),
             'emplacement': forms.Select(attrs={'class': 'form-control'}),
             'commentaire': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['fournisseur'].queryset = Personnel.objects.all()
+        self.fields['fournisseur'].widget = forms.Select(attrs={'class': 'form-control'})
         for name, field in self.fields.items():
-            field.widget.attrs.setdefault('class', 'form-control')
+            if not isinstance(field.widget, forms.Select):
+                field.widget.attrs.setdefault('class', 'form-control')
 
 
 class LigneBonEntreeForm(forms.ModelForm):
@@ -165,15 +167,17 @@ class BonSortieForm(forms.ModelForm):
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'demande': forms.Select(attrs={'class': 'form-control'}),
-            'destinataire': forms.TextInput(attrs={'class': 'form-control'}),
             'emplacement': forms.Select(attrs={'class': 'form-control'}),
             'commentaire': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['destinataire'].queryset = Personnel.objects.all()
+        self.fields['destinataire'].widget = forms.Select(attrs={'class': 'form-control'})
         for name, field in self.fields.items():
-            field.widget.attrs.setdefault('class', 'form-control')
+            if not isinstance(field.widget, forms.Select):
+                field.widget.attrs.setdefault('class', 'form-control')
 
 
 class LigneBonSortieForm(forms.ModelForm):
