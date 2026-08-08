@@ -17,7 +17,8 @@
             <div class="col-md-4"><strong>Date :</strong> {{ bon_sortie.date|date:"d/m/Y" }}</div>
             <div class="col-md-4"><strong>Demande :</strong> {{ bon_sortie.demande.reference|default:"—" }}</div>
             <div class="col-md-4 mt-2"><strong>Destinataire :</strong> {{ bon_sortie.destinataire|default:"—" }}</div>
-            <div class="col-md-4 mt-2"><strong>Emplacement :</strong> {{ bon_sortie.emplacement.location|default:"—" }}</div>
+            <div class="col-md-4 mt-2"><strong>Provenance :</strong> {{ bon_sortie.emplacement_provenance.location|default:"—" }}</div>
+            <div class="col-md-4 mt-2"><strong>Destination :</strong> {{ bon_sortie.emplacement.location|default:"—" }}</div>
             <div class="col-md-4 mt-2"><strong>Commentaire :</strong> {{ bon_sortie.commentaire|default:"—" }}</div>
         </div>
     </div>

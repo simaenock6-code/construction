@@ -586,19 +586,21 @@ class BonSortieTests(TestCase):
         bon = BonSortie.objects.create(
             date=date.today(),
             demande=self.demande,
-            destinataire="Jean Dupont",
-            emplacement=self.emplacement
+            destinataire=self.personnel,
+            emplacement_provenance=self.emplacement,
+            emplacement=self.emplacement,
         )
         
         self.assertEqual(bon.demande, self.demande)
-        self.assertEqual(bon.destinataire, "Jean Dupont")
+        self.assertEqual(bon.destinataire, self.personnel)
         self.assertIsNotNone(bon.reference)
 
     def test_ligne_bon_sortie_stock_update(self):
         """Test de la mise à jour du stock lors de création d'une ligne de bon de sortie."""
         bon = BonSortie.objects.create(
             date=date.today(),
-            emplacement=self.emplacement
+            emplacement_provenance=self.emplacement,
+            emplacement=self.emplacement,
         )
         
         # Créer une ligne de bon de sortie
@@ -616,7 +618,8 @@ class BonSortieTests(TestCase):
         """Test de la restauration du stock lors de suppression d'une ligne."""
         bon = BonSortie.objects.create(
             date=date.today(),
-            emplacement=self.emplacement
+            emplacement_provenance=self.emplacement,
+            emplacement=self.emplacement,
         )
         
         ligne = LigneBonSortie.objects.create(
@@ -635,6 +638,32 @@ class BonSortieTests(TestCase):
         # Le stock doit être restauré à 20
         self.stock.refresh_from_db()
         self.assertEqual(self.stock.quantite_disponible, 20)
+
+
+    def test_ligne_bon_sortie_stock_fallback_emplacement(self):
+        """Test que la décrémentation du stock fonctionne quand le bon de sortie a un
+        emplacement sans stock pour l'article (fallback sur un autre emplacement)."""
+        # Autre emplacement sans stock pour l'article
+        autre_emplacement = Emplacement.objects.create(
+            code="EMP002",
+            location="Entrepôt central"
+        )
+
+        bon = BonSortie.objects.create(
+            date=date.today(),
+            emplacement_provenance=self.emplacement,
+            emplacement=autre_emplacement,  # pas de stock ici pour l'article
+        )
+
+        ligne = LigneBonSortie.objects.create(
+            bon_sortie=bon,
+            article=self.article,
+            quantite=5
+        )
+
+        # Le stock de l'article (à self.emplacement) doit être décrémenté
+        self.stock.refresh_from_db()
+        self.assertEqual(self.stock.quantite_disponible, 15)
 
 
 class IntegrationTests(TestCase):
@@ -696,6 +725,9 @@ class IntegrationTests(TestCase):
 
     def test_workflow_demande_to_bon_sortie(self):
         """Test du workflow complet: Demande -> Bon de sortie."""
+        import logging
+        logging.basicConfig(level=logging.INFO)
+        
         # 1. Chef de chantier crée une demande
         self.client.login(username="chc_test", password="test123")
         
@@ -734,13 +766,21 @@ class IntegrationTests(TestCase):
         bon_sortie_data = {
             'date': date.today().strftime('%Y-%m-%d'),
             'demande': demande.id,
-            'destinataire': 'Marie Martin',
+            'destinataire': self.personnel_chc.id,
+            'emplacement_provenance': self.emplacement.id,
             'emplacement': self.emplacement.id,
-            'commentaire': 'Livraison chantier'
+            'commentaire': 'Livraison chantier',
+            'lignes-TOTAL_FORMS': '1',
+            'lignes-INITIAL_FORMS': '0',
+            'lignes-MIN_NUM_FORMS': '0',
+            'lignes-MAX_NUM_FORMS': '1000',
+            'lignes-0-article': str(self.article.id),
+            'lignes-0-quantite': '5',
         }
         
+        url = reverse('bonsortie_create') + f'?demande={demande.id}'
         response = self.client.post(
-            reverse('bonsortie_create') + f'?demande={demande.id}',
+            url,
             data=bon_sortie_data,
             follow=True
         )
@@ -764,7 +804,7 @@ class IntegrationTests(TestCase):
         # Créer un bon d'entrée
         bon_entree_data = {
             'date': date.today().strftime('%Y-%m-%d'),
-            'fournisseur': 'Fournisseur Test',
+            'fournisseur': self.personnel_rl.id,
             'emplacement': self.emplacement.id,
             'commentaire': 'Livraison mensuelle'
         }
@@ -778,12 +818,15 @@ class IntegrationTests(TestCase):
         bon_entree = BonEntree.objects.first()
         self.assertIsNotNone(bon_entree)
         
-        # Ajouter une ligne de bon d'entrée
-        ligne = LigneBonEntree.objects.create(
-            bon_entree=bon_entree,
-            article=self.article,
-            quantite=50,
-            prix_unitaire=10.00
+        # Ajouter une ligne de bon d'entrée via la vue (qui incrémente le stock)
+        response = self.client.post(
+            reverse('lignebonentree_create', args=[bon_entree.pk]),
+            data={
+                'article': self.article.id,
+                'quantite': 50,
+                'prix_unitaire': 10.00,
+            },
+            follow=True
         )
         
         # Vérifier que le stock a été incrémenté

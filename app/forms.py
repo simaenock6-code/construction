@@ -163,10 +163,11 @@ class LigneBonEntreeForm(forms.ModelForm):
 class BonSortieForm(forms.ModelForm):
     class Meta:
         model = BonSortie
-        fields = ['date', 'demande', 'destinataire', 'emplacement', 'commentaire']
+        fields = ['date', 'demande', 'destinataire', 'emplacement_provenance', 'emplacement', 'commentaire']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'demande': forms.Select(attrs={'class': 'form-control'}),
+            'emplacement_provenance': forms.Select(attrs={'class': 'form-control'}),
             'emplacement': forms.Select(attrs={'class': 'form-control'}),
             'commentaire': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
@@ -175,6 +176,8 @@ class BonSortieForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['destinataire'].queryset = Personnel.objects.all()
         self.fields['destinataire'].widget = forms.Select(attrs={'class': 'form-control'})
+        self.fields['emplacement_provenance'].queryset = Emplacement.objects.all()
+        self.fields['emplacement'].queryset = Emplacement.objects.all()
         for name, field in self.fields.items():
             if not isinstance(field.widget, forms.Select):
                 field.widget.attrs.setdefault('class', 'form-control')

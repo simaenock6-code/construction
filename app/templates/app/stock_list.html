@@ -12,7 +12,7 @@
 </div>
 
 <div class="row g-3">
-    {% for s in stocks %}
+    {% for groupe in articles_groupes %}
     <div class="col-12 col-md-6 col-xl-4">
         <div class="card stock-card shadow-sm h-100">
             <div class="card-body">
@@ -21,21 +21,30 @@
                         📦
                     </div>
                     <div class="text-end">
-                        <div class="small text-uppercase text-muted">Disponible</div>
-                        <div class="stat-value {% if s.quantite_disponible <= s.article.seuil_minimum %}text-danger{% else %}text-success{% endif %}">
-                            {{ s.quantite_disponible }}
+                        <div class="small text-uppercase text-muted">Total disponible</div>
+                        <div class="stat-value {% if groupe.total <= groupe.article.seuil_minimum %}text-danger{% else %}text-success{% endif %}">
+                            {{ groupe.total }}
                         </div>
                     </div>
                 </div>
-                <h5 class="card-title mb-1">{{ s.article.nom }}</h5>
+                <h5 class="card-title mb-1">{{ groupe.article.nom }}</h5>
                 <div class="small text-muted mb-2">
-                    Code: <span class="badge bg-light text-dark border">{{ s.article.code }}</span>
-                    · Unité: {{ s.article.unite_mesure }}
-                    · Seuil min: {{ s.article.seuil_minimum }}
+                    Code: <span class="badge bg-light text-dark border">{{ groupe.article.code }}</span>
+                    · Unité: {{ groupe.article.unite_mesure }}
+                    · Seuil min: {{ groupe.article.seuil_minimum }}
                 </div>
-                <div class="small text-muted mb-3">📍 {{ s.emplacement.location|default:"Sans emplacement" }}</div>
+                <div class="small text-muted mb-2">
+                    <strong>Détail par emplacement:</strong>
+                </div>
+                <ul class="list-unstyled mb-3">
+                    {% for ligne in groupe.lignes %}
+                    <li class="small text-muted">
+                        📍 {{ ligne.emplacement.location|default:"Sans emplacement" }} : <strong>{{ ligne.quantite_disponible }}</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
 
-                {% if s.quantite_disponible <= s.article.seuil_minimum %}
+                {% if groupe.total <= groupe.article.seuil_minimum %}
                     <span class="badge bg-danger">⚠ Stock insuffisant</span>
                 {% else %}
                     <span class="badge bg-success">✓ Stock suffisant</span>
@@ -43,8 +52,7 @@
 
                 {% if not is_chef_chantier %}
                 <div class="mt-3 d-flex gap-2">
-                    <a href="{% url 'stock_update' s.pk %}" class="btn btn-outline-primary btn-sm flex-fill">Modifier</a>
-                    <a href="{% url 'stock_delete' s.pk %}" class="btn btn-outline-danger btn-sm flex-fill">Supprimer</a>
+                    <a href="{% url 'stock_create' %}" class="btn btn-outline-primary btn-sm flex-fill">Ajouter</a>
                 </div>
                 {% endif %}
             </div>

@@ -338,13 +338,21 @@ class BonSortie(models.Model):
         related_name="bons_sortie_destinataire",
         verbose_name="Destinataire"
     )
+    emplacement_provenance = models.ForeignKey(
+        Emplacement,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bons_sortie_provenance",
+        verbose_name="Emplacement de provenance",
+    )
     emplacement = models.ForeignKey(
         Emplacement,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="bons_sortie",
-        verbose_name="Emplacement",
+        verbose_name="Emplacement de destination",
     )
     commentaire = models.TextField(blank=True, verbose_name="Commentaire")
 
@@ -408,13 +416,8 @@ class LigneBonSortie(models.Model):
         super().save(*args, **kwargs)
         
         # Ajuster le stock
-        if self.bon_sortie.emplacement:
-            stock, created = Stock.objects.get_or_create(
-                article=self.article,
-                emplacement=self.bon_sortie.emplacement,
-                defaults={'quantite_disponible': 0}
-            )
-            
+        stock = self._get_stock_a_decrementer()
+        if stock is not None:
             if is_new:
                 # Nouvelle ligne : décrémenter
                 stock.quantite_disponible = max(0, stock.quantite_disponible - self.quantite)
@@ -427,21 +430,38 @@ class LigneBonSortie(models.Model):
                 elif difference < 0:
                     # Quantité diminuée : augmenter le stock (remettre la différence)
                     stock.quantite_disponible += abs(difference)
-            
+
             stock.save()
+
+    def _get_stock_a_decrementer(self):
+        """Retourne le stock à décrémenter pour cette ligne.
+
+        Priorité :
+        1. Le stock de l'article à l'emplacement du bon de sortie.
+        2. Si aucun stock n'existe à cet emplacement (ou le bon n'a pas d'emplacement),
+           fallback sur le premier stock disponible de l'article (tous emplacements confondus).
+        """
+        emplacement = self.bon_sortie.emplacement
+        if emplacement:
+            stock = Stock.objects.filter(
+                article=self.article,
+                emplacement=emplacement
+            ).first()
+            if stock is not None:
+                return stock
+
+        # Fallback : utiliser un stock existant de l'article (celui avec le plus de quantité)
+        return Stock.objects.filter(article=self.article).order_by('-quantite_disponible').first()
 
     def delete(self, *args, **kwargs):
         # Avant de supprimer, remettre la quantité en stock
-        if self.bon_sortie.emplacement:
-            stock = Stock.objects.filter(
-                article=self.article,
-                emplacement=self.bon_sortie.emplacement
-            ).first()
-            if stock:
-                stock.quantite_disponible += self.quantite
-                stock.save()
-        
+        stock = self._get_stock_a_decrementer()
+        if stock is not None:
+            stock.quantite_disponible += self.quantite
+            stock.save()
+
         super().delete(*args, **kwargs)
+
 
 class Devis(models.Model):
     reference = models.CharField(

@@ -94,7 +94,7 @@ def dashboard(request):
     bons_entree_list = BonEntree.objects.select_related("emplacement").prefetch_related("lignes__article").order_by('-date')[:items_per_page]
 
     # Derniers bons de sortie
-    bons_sortie_list = BonSortie.objects.select_related("demande", "emplacement").prefetch_related("lignes__article").order_by('-date')[:items_per_page]
+    bons_sortie_list = BonSortie.objects.select_related("demande", "emplacement_provenance", "emplacement").prefetch_related("lignes__article").order_by('-date')[:items_per_page]
 
     # Derniers devis
     devis_list = Devis.objects.select_related("demande").prefetch_related("lignes__article").order_by('-date')[:items_per_page]
@@ -571,6 +571,21 @@ class StockListView(LoginRequiredMixin, ListView):
         role_code = personnel.fonction.code if personnel and personnel.fonction else ""
         context["is_chef_chantier"] = role_code == "CHC"
         context["is_resp_logistique"] = role_code == "RL"
+
+        stocks = context.get("stocks", [])
+        articles_groupes = {}
+        for stock in stocks:
+            article = stock.article
+            if article.pk not in articles_groupes:
+                articles_groupes[article.pk] = {
+                    "article": article,
+                    "total": 0,
+                    "lignes": [],
+                }
+            articles_groupes[article.pk]["total"] += stock.quantite_disponible
+            articles_groupes[article.pk]["lignes"].append(stock)
+
+        context["articles_groupes"] = list(articles_groupes.values())
         return context
 
 
@@ -731,9 +746,18 @@ class BonSortieCreateView(LoginRequiredMixin, CreateView):
                 # Pré-remplir le destinataire et l'emplacement avec les informations du demandeur
                 if demande.demandeur:
                     initial['destinataire'] = demande.demandeur
-                    # Pré-remplir l'emplacement avec le chantier du demandeur
+                    # Pré-remplir l'emplacement de destination avec le chantier du demandeur
                     if demande.demandeur.chantier:
                         initial['emplacement'] = demande.demandeur.chantier
+                # Fallback : utiliser l'emplacement du responsable logistique connecté
+                if not initial.get('emplacement'):
+                    personnel = getattr(self.request.user, "personnel", None)
+                    if personnel and personnel.chantier:
+                        initial['emplacement'] = personnel.chantier
+                # Pré-remplir l'emplacement de provenance avec le chantier du responsable logistique connecté
+                personnel = getattr(self.request.user, "personnel", None)
+                if personnel and personnel.chantier:
+                    initial['emplacement_provenance'] = personnel.chantier
             except Demande.DoesNotExist:
                 pass
         return initial
@@ -741,6 +765,7 @@ class BonSortieCreateView(LoginRequiredMixin, CreateView):
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         form.fields['destinataire'].queryset = Personnel.objects.all()
+        form.fields['emplacement_provenance'].queryset = Emplacement.objects.all()
         form.fields['emplacement'].queryset = Emplacement.objects.all()
         return form
 
@@ -758,7 +783,7 @@ class BonSortieCreateView(LoginRequiredMixin, CreateView):
                         LigneBonSortie,
                         form=LigneBonSortieForm,
                         extra=0,
-                        can_delete=False
+                        can_delete=False,
                     )
                     initial_lignes = [
                         {'article': ligne.article.pk, 'quantite': ligne.quantite}
@@ -767,11 +792,13 @@ class BonSortieCreateView(LoginRequiredMixin, CreateView):
                     if self.request.POST:
                         context['lignes_formset'] = LigneBonSortieFormSet(
                             self.request.POST,
-                            initial=initial_lignes
+                            initial=initial_lignes,
+                            prefix='lignes',
                         )
                     else:
                         context['lignes_formset'] = LigneBonSortieFormSet(
-                            initial=initial_lignes
+                            initial=initial_lignes,
+                            prefix='lignes',
                         )
                 # Passer l'emplacement (chantier du demandeur) au contexte
                 if demande.demandeur and demande.demandeur.chantier:
@@ -826,32 +853,49 @@ class BonSortieCreateView(LoginRequiredMixin, CreateView):
                     )
                 return self.form_invalid(form)
 
-        response = super().form_valid(form)
-
+        # Construire le formset AVANT de sauvegarder le formulaire principal
+        LigneBonSortieFormSet = inlineformset_factory(
+            BonSortie,
+            LigneBonSortie,
+            form=LigneBonSortieForm,
+            extra=0,
+            can_delete=False,
+        )
+        initial_lignes = []
         lignes_formset = None
         if demande_id:
             try:
                 demande = Demande.objects.get(pk=demande_id)
-                LigneBonSortieFormSet = inlineformset_factory(
-                    BonSortie,
-                    LigneBonSortie,
-                    form=LigneBonSortieForm,
-                    extra=0,
-                    can_delete=False,
-                )
                 initial_lignes = [
                     {'article': ligne.article.pk, 'quantite': ligne.quantite}
                     for ligne in demande.lignes.all()
                 ]
+                # On ne passe pas d'instance car le BonSortie n'existe pas encore
                 lignes_formset = LigneBonSortieFormSet(
                     self.request.POST,
-                    instance=self.object,
                     initial=initial_lignes,
+                    prefix='lignes',
                 )
             except Demande.DoesNotExist:
                 pass
 
+        if lignes_formset is not None and not lignes_formset.is_valid():
+            from django.contrib import messages
+            messages.error(
+                self.request,
+                "Impossible d'enregistrer les articles du bon de sortie. Vérifiez les lignes saisies."
+            )
+            return self.form_invalid(form)
+
+        response = super().form_valid(form)
+
+        # Maintenant que le BonSortie existe, lier le formset à l'instance et sauvegarder
         if lignes_formset is not None:
+            lignes_formset = LigneBonSortieFormSet(
+                self.request.POST,
+                instance=self.object,
+                prefix='lignes',
+            )
             if lignes_formset.is_valid():
                 lignes_formset.save()
             else:
@@ -867,7 +911,6 @@ class BonSortieCreateView(LoginRequiredMixin, CreateView):
                 demande = Demande.objects.get(pk=demande_id)
                 demande.statut = "VALIDE"
                 demande.save()
-                logger.info(f"Demande {demande.reference} validée - Bon de sortie créé")
             except Demande.DoesNotExist:
                 pass
 
@@ -879,6 +922,12 @@ class BonSortieUpdateView(LoginRequiredMixin, UpdateView):
     form_class = BonSortieForm
     template_name = "app/bonsortie_form.html"
     success_url = reverse_lazy('bonsortie_list')
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['emplacement_provenance'].queryset = Emplacement.objects.all()
+        form.fields['emplacement'].queryset = Emplacement.objects.all()
+        return form
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

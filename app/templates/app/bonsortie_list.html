@@ -30,7 +30,10 @@
                     {% if b.destinataire %}👤 {{ b.destinataire }}{% else %}👤 <em>Destinataire non renseigné</em>{% endif %}
                 </div>
                 <div class="small text-muted mb-2">
-                    📍 {{ b.emplacement.location|default:"Sans emplacement" }}
+                    🏭 <strong>Provenance :</strong> {{ b.emplacement_provenance.location|default:"Sans provenance" }}
+                </div>
+                <div class="small text-muted mb-2">
+                    📍 <strong>Destination :</strong> {{ b.emplacement.location|default:"Sans destination" }}
                 </div>
                 <div class="mb-2">
                     <div class="small text-uppercase text-muted fw-bold mb-1">Articles</div>

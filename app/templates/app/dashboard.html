@@ -627,11 +627,6 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'demande_create' %}active{% endif %}" href="{% url 'demande_create' %}">
-                    <i class="bi bi-plus-circle-fill"></i> Créer une demande
-                </a>
-            </li>
-            <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'stock_list' %}active{% endif %}" href="{% url 'stock_list' %}">
                     <i class="bi bi-box-seam-fill"></i> Vérifier le stock
                 </a>
